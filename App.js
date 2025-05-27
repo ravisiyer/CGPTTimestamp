@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+// import { Platform } from 'react-native';
 
 const STORAGE_KEY = '@timestamp_list';
 
@@ -35,17 +36,38 @@ export default function App() {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
 
-  const clearTimestamps = () => {
-    Alert.alert('Confirm', 'Clear all timestamps?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'OK',
-        onPress: async () => {
-          await AsyncStorage.removeItem(STORAGE_KEY);
-          setTimestamps([]);
+  // const clearTimestamps = () => {
+  //   Alert.alert('Confirm', 'Clear all timestamps?', [
+  //     { text: 'Cancel', style: 'cancel' },
+  //     {
+  //       text: 'OK',
+  //       onPress: async () => {
+  //         await AsyncStorage.removeItem(STORAGE_KEY);
+  //         setTimestamps([]);
+  //       },
+  //     },
+  //   ]);
+  // };
+
+  const clearTimestamps = async () => {
+    if (Platform.OS === 'web') {
+      const confirm = window.confirm('Clear all timestamps?');
+      if (confirm) {
+        await AsyncStorage.removeItem(STORAGE_KEY);
+        setTimestamps([]);
+      }
+    } else {
+      Alert.alert('Confirm', 'Clear all timestamps?', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'OK',
+          onPress: async () => {
+            await AsyncStorage.removeItem(STORAGE_KEY);
+            setTimestamps([]);
+          },
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   const renderItem = ({ item, index }) => {
