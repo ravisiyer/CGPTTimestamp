@@ -8,6 +8,7 @@ import {
   View,
   StyleSheet,
   Platform,
+  StatusBar,
   useColorScheme,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -102,7 +103,16 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[
+      styles.container,
+      Platform.OS === 'android' && { paddingTop: StatusBar.currentHeight || 0 }
+    ]}>
+      <StatusBar
+        translucent
+        // backgroundColor="transparent"
+        backgroundColor={isDark ? '#000000' : '#ffffff'}
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+      />
       <Text style={styles.title}>Timestamp Tracker</Text>
       <Button title="Add Timestamp" onPress={addTimestamp} />
       <FlatList
