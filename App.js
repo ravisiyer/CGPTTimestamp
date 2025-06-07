@@ -98,45 +98,45 @@ const exportTimestamps = async () => {
   }
 };
 
-  // const exportTimestamps = async () => {
-  //   if (timestamps.length === 0) {
-  //     alert('No timestamps to export.');
-  //     return;
-  //   }
+const formatInterval = (seconds) => {
+  if (seconds === '') return '';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}m ${secs}s`;
+};
 
-  //   const csv = timestamps
-  //     .map((t, i) => {
-  //       const next = timestamps[i + 1];
-  //       const interval = next ? (new Date(t) - new Date(next)) / 1000 : '';
-  //       return `"${new Date(t).toLocaleString()}","${interval}"`;
-  //     })
-  //     .join('\n');
+const renderItem = ({ item, index }) => {
+  const current = new Date(item);
+  const prev = timestamps[index + 1]
+    ? new Date(timestamps[index + 1])
+    : null;
+  const intervalSeconds = prev != null ? Math.abs((current - prev) / 1000) : null;
+  const interval = intervalSeconds != null ? formatInterval(intervalSeconds) : null;
 
-  //   const fileUri = FileSystem.documentDirectory + 'timestamps.csv';
-  //   await FileSystem.writeAsStringAsync(fileUri, csv);
+  return (
+    <View style={styles.item}>
+      <Text style={styles.text}>{current.toLocaleString()}</Text>
+      {interval && <Text style={styles.text}>Interval: {interval}</Text>}
+    </View>
+  );
+};
 
-  //   if (await Sharing.isAvailableAsync()) {
-  //     await Sharing.shareAsync(fileUri);
-  //   } else {
-  //     alert('Sharing not available on this platform.');
-  //   }
+
+  // const renderItem = ({ item, index }) => {
+  //   const current = new Date(item);
+  //   const prev = timestamps[index + 1]
+  //     ? new Date(timestamps[index + 1])
+  //     : null;
+  //   const interval =
+  //     prev != null ? `${Math.abs((current - prev) / 1000)} sec` : null;
+
+  //   return (
+  //     <View style={styles.item}>
+  //       <Text style={styles.text}>{current.toLocaleString()}</Text>
+  //       {interval && <Text style={styles.text}>Interval: {interval}</Text>}
+  //     </View>
+  //   );
   // };
-
-  const renderItem = ({ item, index }) => {
-    const current = new Date(item);
-    const prev = timestamps[index + 1]
-      ? new Date(timestamps[index + 1])
-      : null;
-    const interval =
-      prev != null ? `${Math.abs((current - prev) / 1000)} sec` : null;
-
-    return (
-      <View style={styles.item}>
-        <Text style={styles.text}>{current.toLocaleString()}</Text>
-        {interval && <Text style={styles.text}>Interval: {interval}</Text>}
-      </View>
-    );
-  };
 
   return (
     <SafeAreaView style={[
