@@ -100,10 +100,42 @@ const exportTimestamps = async () => {
 
 const formatInterval = (seconds) => {
   if (seconds === '') return '';
-  const mins = Math.floor(seconds / 60);
+  const days = Math.floor(seconds / 86400); // 86400 = 24 * 3600
+  const hrs = Math.floor((seconds % 86400) / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
-  return `${mins}m ${secs}s`;
+
+  let result = '';
+  if (days > 0) result += `${days}d `;
+  if (hrs > 0 || days > 0) result += `${hrs}h `;
+  if (mins > 0 || hrs > 0 || days > 0) result += `${mins}m `;
+  result += `${secs}s`;
+
+  return result.trim();
 };
+
+
+// const formatInterval = (seconds) => {
+//   if (seconds === '') return '';
+//   const hrs = Math.floor(seconds / 3600);
+//   const mins = Math.floor((seconds % 3600) / 60);
+//   const secs = Math.floor(seconds % 60);
+
+//   let result = '';
+//   if (hrs > 0) result += `${hrs}h `;
+//   if (mins > 0 || hrs > 0) result += `${mins}m `;
+//   result += `${secs}s`;
+
+//   return result.trim();
+// };
+
+
+// const formatInterval = (seconds) => {
+//   if (seconds === '') return '';
+//   const mins = Math.floor(seconds / 60);
+//   const secs = Math.floor(seconds % 60);
+//   return `${mins}m ${secs}s`;
+// };
 
 const renderItem = ({ item, index }) => {
   const current = new Date(item);
@@ -120,23 +152,6 @@ const renderItem = ({ item, index }) => {
     </View>
   );
 };
-
-
-  // const renderItem = ({ item, index }) => {
-  //   const current = new Date(item);
-  //   const prev = timestamps[index + 1]
-  //     ? new Date(timestamps[index + 1])
-  //     : null;
-  //   const interval =
-  //     prev != null ? `${Math.abs((current - prev) / 1000)} sec` : null;
-
-  //   return (
-  //     <View style={styles.item}>
-  //       <Text style={styles.text}>{current.toLocaleString()}</Text>
-  //       {interval && <Text style={styles.text}>Interval: {interval}</Text>}
-  //     </View>
-  //   );
-  // };
 
   return (
     <SafeAreaView style={[
