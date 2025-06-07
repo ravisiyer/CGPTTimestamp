@@ -62,20 +62,31 @@ export default function App() {
     }
   };
 
-  const exportTimestamps = async () => {
-    if (timestamps.length === 0) {
-      alert('No timestamps to export.');
-      return;
-    }
+const exportTimestamps = async () => {
+  if (timestamps.length === 0) {
+    alert('No timestamps to export.');
+    return;
+  }
 
-    const csv = timestamps
-      .map((t, i) => {
-        const next = timestamps[i + 1];
-        const interval = next ? (new Date(t) - new Date(next)) / 1000 : '';
-        return `"${new Date(t).toLocaleString()}","${interval}"`;
-      })
-      .join('\n');
+  const csv = timestamps
+    .map((t, i) => {
+      const next = timestamps[i + 1];
+      const interval = next ? (new Date(t) - new Date(next)) / 1000 : '';
+      return `"${new Date(t).toLocaleString()}","${interval}"`;
+    })
+    .join('\n');
 
+  if (Platform.OS === 'web') {
+    // Create a Blob and trigger download in browser
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'timestamps.csv';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  } else {
+    // Native (Android, iOS)
     const fileUri = FileSystem.documentDirectory + 'timestamps.csv';
     await FileSystem.writeAsStringAsync(fileUri, csv);
 
@@ -84,7 +95,32 @@ export default function App() {
     } else {
       alert('Sharing not available on this platform.');
     }
-  };
+  }
+};
+
+  // const exportTimestamps = async () => {
+  //   if (timestamps.length === 0) {
+  //     alert('No timestamps to export.');
+  //     return;
+  //   }
+
+  //   const csv = timestamps
+  //     .map((t, i) => {
+  //       const next = timestamps[i + 1];
+  //       const interval = next ? (new Date(t) - new Date(next)) / 1000 : '';
+  //       return `"${new Date(t).toLocaleString()}","${interval}"`;
+  //     })
+  //     .join('\n');
+
+  //   const fileUri = FileSystem.documentDirectory + 'timestamps.csv';
+  //   await FileSystem.writeAsStringAsync(fileUri, csv);
+
+  //   if (await Sharing.isAvailableAsync()) {
+  //     await Sharing.shareAsync(fileUri);
+  //   } else {
+  //     alert('Sharing not available on this platform.');
+  //   }
+  // };
 
   const renderItem = ({ item, index }) => {
     const current = new Date(item);
