@@ -22,17 +22,37 @@ export default function App() {
   const isDark = useColorScheme() === 'dark';
   const styles = useStyles(isDark);
 
+  console.log("App starting...")
+
   useEffect(() => {
     const loadData = async () => {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      const parsed = stored ? JSON.parse(stored) : [];
-      const now = new Date().toISOString();
-      const updated = [now, ...parsed].slice(0, 100);
-      setTimestamps(updated);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      console.log("loadData starting...")
+      try {
+        const stored = await AsyncStorage.getItem(STORAGE_KEY);
+        const parsed = stored ? JSON.parse(stored) : [];
+        const now = new Date().toISOString();
+        const updated = [now, ...parsed].slice(0, 100);
+        setTimestamps(updated);
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch (error) {
+        console.error("Error loading timestamps:", error);
+        Alert.alert("Error", "Something went wrong while loading timestamps.");
+      }
     };
     loadData();
   }, []);
+
+  // useEffect(() => {
+  //   const loadData = async () => {
+  //     const stored = await AsyncStorage.getItem(STORAGE_KEY);
+  //     const parsed = stored ? JSON.parse(stored) : [];
+  //     const now = new Date().toISOString();
+  //     const updated = [now, ...parsed].slice(0, 100);
+  //     setTimestamps(updated);
+  //     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  //   };
+  //   loadData();
+  // }, []);
 
   const addTimestamp = async () => {
     const now = new Date().toISOString();
@@ -113,29 +133,6 @@ const formatInterval = (seconds) => {
 
   return result.trim();
 };
-
-
-// const formatInterval = (seconds) => {
-//   if (seconds === '') return '';
-//   const hrs = Math.floor(seconds / 3600);
-//   const mins = Math.floor((seconds % 3600) / 60);
-//   const secs = Math.floor(seconds % 60);
-
-//   let result = '';
-//   if (hrs > 0) result += `${hrs}h `;
-//   if (mins > 0 || hrs > 0) result += `${mins}m `;
-//   result += `${secs}s`;
-
-//   return result.trim();
-// };
-
-
-// const formatInterval = (seconds) => {
-//   if (seconds === '') return '';
-//   const mins = Math.floor(seconds / 60);
-//   const secs = Math.floor(seconds % 60);
-//   return `${mins}m ${secs}s`;
-// };
 
 const renderItem = ({ item, index }) => {
   const current = new Date(item);
