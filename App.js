@@ -22,11 +22,11 @@ export default function App() {
   const isDark = useColorScheme() === 'dark';
   const styles = useStyles(isDark);
 
-  console.log("App starting...")
+  // console.log("App starting...")
 
   useEffect(() => {
     const loadData = async () => {
-      console.log("loadData starting...")
+      // console.log("loadData starting...")
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         const parsed = stored ? JSON.parse(stored) : [];
@@ -41,18 +41,6 @@ export default function App() {
     };
     loadData();
   }, []);
-
-  // useEffect(() => {
-  //   const loadData = async () => {
-  //     const stored = await AsyncStorage.getItem(STORAGE_KEY);
-  //     const parsed = stored ? JSON.parse(stored) : [];
-  //     const now = new Date().toISOString();
-  //     const updated = [now, ...parsed].slice(0, 100);
-  //     setTimestamps(updated);
-  //     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  //   };
-  //   loadData();
-  // }, []);
 
   const addTimestamp = async () => {
     const now = new Date().toISOString();
@@ -88,16 +76,20 @@ const exportTimestamps = async () => {
     return;
   }
 
-  const csv = timestamps
+  const header = `"Timestamp","Interval"\n`;
+  const csvBody = timestamps
     .map((t, i) => {
       const next = timestamps[i + 1];
-      const interval = next ? (new Date(t) - new Date(next)) / 1000 : '';
+      const interval = next
+        ? formatInterval((new Date(t) - new Date(next)) / 1000)
+        : '';
       return `"${new Date(t).toLocaleString()}","${interval}"`;
     })
     .join('\n');
 
+  const csv = header + csvBody;
+
   if (Platform.OS === 'web') {
-    // Create a Blob and trigger download in browser
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -106,7 +98,6 @@ const exportTimestamps = async () => {
     anchor.click();
     URL.revokeObjectURL(url);
   } else {
-    // Native (Android, iOS)
     const fileUri = FileSystem.documentDirectory + 'timestamps.csv';
     await FileSystem.writeAsStringAsync(fileUri, csv);
 
@@ -116,14 +107,50 @@ const exportTimestamps = async () => {
       alert('Sharing not available on this platform.');
     }
   }
-};
+};  
+// const exportTimestamps = async () => {
+//   if (timestamps.length === 0) {
+//     alert('No timestamps to export.');
+//     return;
+//   }
+
+//   const csv = timestamps
+//     .map((t, i) => {
+//       const next = timestamps[i + 1];
+//       const interval = next ? (new Date(t) - new Date(next)) / 1000 : '';
+//       return `"${new Date(t).toLocaleString()}","${interval}"`;
+//     })
+//     .join('\n');
+
+//   if (Platform.OS === 'web') {
+//     // Create a Blob and trigger download in browser
+//     const blob = new Blob([csv], { type: 'text/csv' });
+//     const url = URL.createObjectURL(blob);
+//     const anchor = document.createElement('a');
+//     anchor.href = url;
+//     anchor.download = 'timestamps.csv';
+//     anchor.click();
+//     URL.revokeObjectURL(url);
+//   } else {
+//     // Native (Android, iOS)
+//     const fileUri = FileSystem.documentDirectory + 'timestamps.csv';
+//     await FileSystem.writeAsStringAsync(fileUri, csv);
+
+//     if (await Sharing.isAvailableAsync()) {
+//       await Sharing.shareAsync(fileUri);
+//     } else {
+//       alert('Sharing not available on this platform.');
+//     }
+//   }
+// };
 
 const formatInterval = (seconds) => {
   if (seconds === '') return '';
-  const days = Math.floor(seconds / 86400); // 86400 = 24 * 3600
-  const hrs = Math.floor((seconds % 86400) / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
+  const total = Math.round(seconds); // rounded total seconds
+  const days = Math.floor(total / 86400);
+  const hrs = Math.floor((total % 86400) / 3600);
+  const mins = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
 
   let result = '';
   if (days > 0) result += `${days}d `;
@@ -133,6 +160,22 @@ const formatInterval = (seconds) => {
 
   return result.trim();
 };
+
+// const formatInterval = (seconds) => {
+//   if (seconds === '') return '';
+//   const days = Math.floor(seconds / 86400); // 86400 = 24 * 3600
+//   const hrs = Math.floor((seconds % 86400) / 3600);
+//   const mins = Math.floor((seconds % 3600) / 60);
+//   const secs = Math.floor(seconds % 60);
+
+//   let result = '';
+//   if (days > 0) result += `${days}d `;
+//   if (hrs > 0 || days > 0) result += `${hrs}h `;
+//   if (mins > 0 || hrs > 0 || days > 0) result += `${mins}m `;
+//   result += `${secs}s`;
+
+//   return result.trim();
+// };
 
 const renderItem = ({ item, index }) => {
   const current = new Date(item);
