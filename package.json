@@ -1,8 +1,11 @@
 {
   "name": "timestamptrackerweb",
   "version": "1.0.0",
+  "homepage": "https://ravisiyer.github.io/CGPTTimestamp",
   "main": "index.js",
   "scripts": {
+    "predeploy": "npx expo export -p web",
+    "deploy": "npx gh-pages -d dist",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -15,14 +18,15 @@
     "expo-file-system": "~18.1.10",
     "expo-sharing": "~13.1.5",
     "expo-status-bar": "~2.2.3",
+    "expo-system-ui": "~5.0.8",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.3",
-    "react-native-web": "^0.20.0",
-    "expo-system-ui": "~5.0.8"
+    "react-native-web": "^0.20.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "gh-pages": "^6.3.0"
   },
   "private": true
 }

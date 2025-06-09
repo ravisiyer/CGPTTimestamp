@@ -108,41 +108,6 @@ const exportTimestamps = async () => {
     }
   }
 };  
-// const exportTimestamps = async () => {
-//   if (timestamps.length === 0) {
-//     alert('No timestamps to export.');
-//     return;
-//   }
-
-//   const csv = timestamps
-//     .map((t, i) => {
-//       const next = timestamps[i + 1];
-//       const interval = next ? (new Date(t) - new Date(next)) / 1000 : '';
-//       return `"${new Date(t).toLocaleString()}","${interval}"`;
-//     })
-//     .join('\n');
-
-//   if (Platform.OS === 'web') {
-//     // Create a Blob and trigger download in browser
-//     const blob = new Blob([csv], { type: 'text/csv' });
-//     const url = URL.createObjectURL(blob);
-//     const anchor = document.createElement('a');
-//     anchor.href = url;
-//     anchor.download = 'timestamps.csv';
-//     anchor.click();
-//     URL.revokeObjectURL(url);
-//   } else {
-//     // Native (Android, iOS)
-//     const fileUri = FileSystem.documentDirectory + 'timestamps.csv';
-//     await FileSystem.writeAsStringAsync(fileUri, csv);
-
-//     if (await Sharing.isAvailableAsync()) {
-//       await Sharing.shareAsync(fileUri);
-//     } else {
-//       alert('Sharing not available on this platform.');
-//     }
-//   }
-// };
 
 const formatInterval = (seconds) => {
   if (seconds === '') return '';
@@ -160,22 +125,6 @@ const formatInterval = (seconds) => {
 
   return result.trim();
 };
-
-// const formatInterval = (seconds) => {
-//   if (seconds === '') return '';
-//   const days = Math.floor(seconds / 86400); // 86400 = 24 * 3600
-//   const hrs = Math.floor((seconds % 86400) / 3600);
-//   const mins = Math.floor((seconds % 3600) / 60);
-//   const secs = Math.floor(seconds % 60);
-
-//   let result = '';
-//   if (days > 0) result += `${days}d `;
-//   if (hrs > 0 || days > 0) result += `${hrs}h `;
-//   if (mins > 0 || hrs > 0 || days > 0) result += `${mins}m `;
-//   result += `${secs}s`;
-
-//   return result.trim();
-// };
 
 const renderItem = ({ item, index }) => {
   const current = new Date(item);
@@ -200,7 +149,6 @@ const renderItem = ({ item, index }) => {
     ]}>
       <StatusBar
         translucent
-        // backgroundColor="transparent"
         backgroundColor={isDark ? '#000000' : '#ffffff'}
         barStyle={isDark ? 'light-content' : 'dark-content'}
       />
@@ -213,8 +161,8 @@ const renderItem = ({ item, index }) => {
       />
       <Button title="Export to File" onPress={exportTimestamps} />
       <Button color="red" title="Clear All" onPress={clearTimestamps} />
-      <Text style={styles.footer}>Running on: {Platform.OS}</Text>
     </SafeAreaView>
+      // <Text style={styles.footer}>Running on: {Platform.OS}</Text>
   );
 }
 
@@ -223,7 +171,8 @@ const useStyles = (isDark) =>
     container: {
       flex: 1,
       padding: 20,
-      marginTop: 30,
+      paddingTop: 10,     // overrides only the top padding
+      // marginTop: 30,
       backgroundColor: isDark ? '#000' : '#fff',
     },
     title: {
