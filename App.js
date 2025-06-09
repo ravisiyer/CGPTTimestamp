@@ -135,13 +135,31 @@ const renderItem = ({ item, index }) => {
   const intervalSeconds = prev != null ? Math.abs((current - prev) / 1000) : null;
   const interval = intervalSeconds != null ? formatInterval(intervalSeconds) : null;
 
+  const isLastItem = index === timestamps.length - 1;
+
   return (
-    <View style={styles.item}>
+    <View style={[styles.item, isLastItem && { marginBottom: 0 }]}>
       <Text style={styles.text}>{current.toLocaleString()}</Text>
       {interval && <Text style={styles.text}>Interval: {interval}</Text>}
     </View>
   );
 };
+
+// const renderItem = ({ item, index }) => {
+//   const current = new Date(item);
+//   const prev = timestamps[index + 1]
+//     ? new Date(timestamps[index + 1])
+//     : null;
+//   const intervalSeconds = prev != null ? Math.abs((current - prev) / 1000) : null;
+//   const interval = intervalSeconds != null ? formatInterval(intervalSeconds) : null;
+
+//   return (
+//     <View style={styles.item}>
+//       <Text style={styles.text}>{current.toLocaleString()}</Text>
+//       {interval && <Text style={styles.text}>Interval: {interval}</Text>}
+//     </View>
+//   );
+// };
 
   return (
     <SafeAreaView style={[
@@ -160,7 +178,7 @@ const renderItem = ({ item, index }) => {
 
         <FlatList
           style={styles.list}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={{ paddingBottom: 0 }}
           data={timestamps}
           keyExtractor={(item, index) => index.toString()}
           renderItem={renderItem}
