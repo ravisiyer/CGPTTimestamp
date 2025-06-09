@@ -10,6 +10,7 @@ import {
   Platform,
   StatusBar,
   useColorScheme,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
@@ -152,22 +153,39 @@ const renderItem = ({ item, index }) => {
         backgroundColor={isDark ? '#000000' : '#ffffff'}
         barStyle={isDark ? 'light-content' : 'dark-content'}
       />
-      <Text style={styles.title}>Timestamp Tracker</Text>
-      <Button title="Add Timestamp" onPress={addTimestamp} />
-      <FlatList
-        data={timestamps}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={renderItem}
-      />
-      <Button title="Export to File" onPress={exportTimestamps} />
-      <Button color="red" title="Clear All" onPress={clearTimestamps} />
+
+      <View style={styles.inner}>
+        <Text style={styles.title}>Timestamp Tracker</Text>
+        <Button title="Add Timestamp" onPress={addTimestamp} />
+
+        <FlatList
+          style={styles.list}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          data={timestamps}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={renderItem}
+        />
+
+        <View style={styles.bottomButtons}>
+          <Button title="Export to File" onPress={exportTimestamps} />
+          <Button color="red" title="Clear All" onPress={clearTimestamps} />
+        </View>
+      </View>
     </SafeAreaView>
-      // <Text style={styles.footer}>Running on: {Platform.OS}</Text>
   );
 }
 
 const useStyles = (isDark) =>
   StyleSheet.create({
+    // scrollContent: {
+    //   flexGrow: 1,
+    //   paddingBottom: 30, // ensure space for bottom buttons
+    // },
+    // contentWrapper: {
+    //   maxWidth: 800,
+    //   width: '100%',
+    //   alignSelf: 'center',
+    // },
     container: {
       flex: 1,
       padding: 20,
@@ -175,11 +193,21 @@ const useStyles = (isDark) =>
       // marginTop: 30,
       backgroundColor: isDark ? '#000' : '#fff',
     },
+    inner: {
+      flex: 1,
+      maxWidth: 800,
+      alignSelf: 'center',
+      width: '100%',
+    },
     title: {
       fontSize: 24,
       fontWeight: 'bold',
       marginBottom: 20,
       color: isDark ? '#fff' : '#000',
+    },
+    list: {
+      flex: 1,
+      marginVertical: 10,
     },
     item: {
       padding: 10,
@@ -190,10 +218,8 @@ const useStyles = (isDark) =>
     text: {
       color: isDark ? '#fff' : '#000',
     },
-    footer: {
-      textAlign: 'center',
-      marginTop: 20,
-      fontStyle: 'italic',
-      color: isDark ? '#ccc' : '#666',
+    bottomButtons: {
+      // marginVertical: 10,
+      gap: 10, // You can use padding/margin if `gap` is unsupported
     },
   });
