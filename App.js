@@ -206,8 +206,9 @@ const useStyles = (isDark) =>
     // },
     container: {
       flex: 1,
-      padding: 20,
-      paddingTop: 10,     // overrides only the top padding
+      padding: 20, // Strangely padding has no impact on web but has on Android
+      paddingTop: 10,     // paddingTop and paddingBottom have impact both on web and Android
+      paddingBottom: 10,
       // marginTop: 30,
       backgroundColor: isDark ? '#000' : '#fff',
     },
