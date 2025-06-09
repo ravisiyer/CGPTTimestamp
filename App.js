@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   Text,
@@ -10,7 +10,6 @@ import {
   Platform,
   StatusBar,
   useColorScheme,
-  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
@@ -23,11 +22,8 @@ export default function App() {
   const isDark = useColorScheme() === 'dark';
   const styles = useStyles(isDark);
 
-  // console.log("App starting...")
-
   useEffect(() => {
     const loadData = async () => {
-      // console.log("loadData starting...")
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         const parsed = stored ? JSON.parse(stored) : [];
@@ -145,22 +141,6 @@ const renderItem = ({ item, index }) => {
   );
 };
 
-// const renderItem = ({ item, index }) => {
-//   const current = new Date(item);
-//   const prev = timestamps[index + 1]
-//     ? new Date(timestamps[index + 1])
-//     : null;
-//   const intervalSeconds = prev != null ? Math.abs((current - prev) / 1000) : null;
-//   const interval = intervalSeconds != null ? formatInterval(intervalSeconds) : null;
-
-//   return (
-//     <View style={styles.item}>
-//       <Text style={styles.text}>{current.toLocaleString()}</Text>
-//       {interval && <Text style={styles.text}>Interval: {interval}</Text>}
-//     </View>
-//   );
-// };
-
   return (
     <SafeAreaView style={[
       styles.container,
@@ -174,8 +154,8 @@ const renderItem = ({ item, index }) => {
 
       <View style={styles.inner}>
         <Text style={styles.title}>Timestamp Tracker</Text>
-        <Button title="Add Timestamp" onPress={addTimestamp} />
-
+        <Button title="Export to File" onPress={exportTimestamps} />
+        <Button color="red" title="Clear All" onPress={clearTimestamps} />
         <FlatList
           style={styles.list}
           contentContainerStyle={{ paddingBottom: 0 }}
@@ -183,10 +163,8 @@ const renderItem = ({ item, index }) => {
           keyExtractor={(item, index) => index.toString()}
           renderItem={renderItem}
         />
-
         <View style={styles.bottomButtons}>
-          <Button title="Export to File" onPress={exportTimestamps} />
-          <Button color="red" title="Clear All" onPress={clearTimestamps} />
+          <Button title="Add Timestamp" onPress={addTimestamp} />
         </View>
       </View>
     </SafeAreaView>
@@ -195,15 +173,6 @@ const renderItem = ({ item, index }) => {
 
 const useStyles = (isDark) =>
   StyleSheet.create({
-    // scrollContent: {
-    //   flexGrow: 1,
-    //   paddingBottom: 30, // ensure space for bottom buttons
-    // },
-    // contentWrapper: {
-    //   maxWidth: 800,
-    //   width: '100%',
-    //   alignSelf: 'center',
-    // },
     container: {
       flex: 1,
       padding: 20, // Strangely padding has no impact on web but has on Android
