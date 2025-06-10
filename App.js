@@ -82,9 +82,8 @@ export default function App() {
     const csvBody = timestamps
       .map((t, i) => {
         const next = timestamps[i + 1];
-        // Pass the raw millisecond difference to formatInterval
         const interval = next
-          ? formatInterval(new Date(t) - new Date(next)) // Removed / 1000
+          ? formatInterval(new Date(t) - new Date(next)) 
           : '';
         return `"${new Date(t).toLocaleString()}","${interval}"`;
       })
@@ -92,7 +91,6 @@ export default function App() {
 
     const csv = header + csvBody;
 
-    // ... rest of the exportTimestamps function remains the same
     if (Platform.OS === 'web') {
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -113,92 +111,43 @@ export default function App() {
     }
   };  
 
-  // const exportTimestamps = async () => {
-  //   if (timestamps.length === 0) {
-  //     alert('No timestamps to export.');
-  //     return;
-  //   }
-
-  //   const header = `"Timestamp","Interval"\n`;
-  //   const csvBody = timestamps
-  //     .map((t, i) => {
-  //       const next = timestamps[i + 1];
-  //       const interval = next
-  //         ? formatInterval((new Date(t) - new Date(next)) / 1000)
-  //         : '';
-  //       return `"${new Date(t).toLocaleString()}","${interval}"`;
-  //     })
-  //     .join('\n');
-
-  //   const csv = header + csvBody;
-
-  //   if (Platform.OS === 'web') {
-  //     const blob = new Blob([csv], { type: 'text/csv' });
-  //     const url = URL.createObjectURL(blob);
-  //     const anchor = document.createElement('a');
-  //     anchor.href = url;
-  //     anchor.download = 'timestamps.csv';
-  //     anchor.click();
-  //     URL.revokeObjectURL(url);
-  //   } else {
-  //     const fileUri = FileSystem.documentDirectory + 'timestamps.csv';
-  //     await FileSystem.writeAsStringAsync(fileUri, csv);
-
-  //     if (await Sharing.isAvailableAsync()) {
-  //       await Sharing.shareAsync(fileUri);
-  //     } else {
-  //       alert('Sharing not available on this platform.');
-  //     }
-  //   }
-  // };  
-
   const formatInterval = (totalMilliseconds) => {
     if (totalMilliseconds === null || isNaN(totalMilliseconds)) return '';
 
-    // Calculate total seconds by flooring, not rounding, to correctly extract larger units
-    const totalSeconds = Math.floor(totalMilliseconds / 1000);
+    const MS_PER_SECOND = 1000;
+    const MS_PER_MINUTE = 60 * MS_PER_SECOND;
+    const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+    const MS_PER_DAY = 24 * MS_PER_HOUR;
 
-    const days = Math.floor(totalSeconds / 86400);
-    const hrs = Math.floor((totalSeconds % 86400) / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60; // This is now correct based on totalSeconds
+    const days = Math.floor(totalMilliseconds / MS_PER_DAY);
+    let remainderMs = totalMilliseconds % MS_PER_DAY; // Use let for remainderMs
 
-    // Milliseconds are the remainder after extracting full seconds
-    const millisecs = Math.round(totalMilliseconds % 1000);
+    const hrs = Math.floor(remainderMs / MS_PER_HOUR);
+    remainderMs %= MS_PER_HOUR; // Update remainderMs
+
+    const mins = Math.floor(remainderMs / MS_PER_MINUTE);
+    remainderMs %= MS_PER_MINUTE; // Update remainderMs
+
+    const secs = Math.floor(remainderMs / MS_PER_SECOND); // Get whole seconds
+    const millisecs = remainderMs % MS_PER_SECOND; // Get remaining milliseconds
 
     let result = '';
     if (days > 0) result += `${days}d `;
     if (hrs > 0 || days > 0) result += `${hrs}h `;
     if (mins > 0 || hrs > 0 || days > 0) result += `${mins}m `;
-    result += `${secs}s `;
+    result += `${secs}s `; // Now this will be a whole number of seconds
     result += `${millisecs}ms`;
 
     return result.trim();
   };
 
-  // const formatInterval = (seconds) => {
-  //   if (seconds === '') return '';
-  //   const total = Math.round(seconds); // rounded total seconds
-  //   const days = Math.floor(total / 86400);
-  //   const hrs = Math.floor((total % 86400) / 3600);
-  //   const mins = Math.floor((total % 3600) / 60);
-  //   const secs = total % 60;
-
-  //   let result = '';
-  //   if (days > 0) result += `${days}d `;
-  //   if (hrs > 0 || days > 0) result += `${hrs}h `;
-  //   if (mins > 0 || hrs > 0 || days > 0) result += `${mins}m `;
-  //   result += `${secs}s`;
-
-  //   return result.trim();
-  // };
   const renderItem = ({ item, index }) => {
     const current = new Date(item);
     const prev = timestamps[index + 1]
       ? new Date(timestamps[index + 1])
       : null;
-    // Pass the raw millisecond difference to formatInterval
-    const intervalMilliseconds = prev != null ? Math.abs(current - prev) : null; // Removed / 1000
+
+    const intervalMilliseconds = prev != null ? Math.abs(current - prev) : null; 
     const interval = intervalMilliseconds != null ? formatInterval(intervalMilliseconds) : null;
 
     const isLastItem = index === timestamps.length - 1;
@@ -210,24 +159,6 @@ export default function App() {
       </View>
     );
   };
-
-  // const renderItem = ({ item, index }) => {
-  //   const current = new Date(item);
-  //   const prev = timestamps[index + 1]
-  //     ? new Date(timestamps[index + 1])
-  //     : null;
-  //   const intervalSeconds = prev != null ? Math.abs((current - prev) / 1000) : null;
-  //   const interval = intervalSeconds != null ? formatInterval(intervalSeconds) : null;
-
-  //   const isLastItem = index === timestamps.length - 1;
-
-  //   return (
-  //     <View style={[styles.item, isLastItem && { marginBottom: 0 }]}>
-  //       <Text style={styles.text}>{current.toLocaleString()}</Text>
-  //       {interval && <Text style={styles.text}>Interval: {interval}</Text>}
-  //     </View>
-  //   );
-  // };
 
   const openBlogLink = () => {
     const url = 'https://raviswdev.blogspot.com/2025/06/using-chatgpt-to-write-react-native.html';
