@@ -1,6 +1,10 @@
 // util.js
 
-const TEST_FORMAT_INTERVAL = true;
+// const TEST_FORMAT_INTERVAL = true;
+// This constant is evaluated only once when the module loads.
+// Logs will appear if NOT in production AND if ENABLE_FORMAT_INTERVAL_LOGS environment variable is 'true'.
+const TEST_FORMAT_INTERVAL = process.env.NODE_ENV !== 'production' &&
+                              process.env.ENABLE_FORMAT_INTERVAL_LOGS === 'true';
 /**
  * Formats a total duration in milliseconds into a human-readable string (e.g., "1d 2h 3m 4s 500ms").
  * Console logs are conditional based on TEST_FORMAT_INTERVAL.

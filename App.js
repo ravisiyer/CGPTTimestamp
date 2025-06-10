@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import Constants from 'expo-constants';
+import { formatInterval } from './util.mjs';
 
 const STORAGE_KEY = '@timestamp_list';
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
@@ -110,36 +111,6 @@ export default function App() {
       }
     }
   };  
-
-  const formatInterval = (totalMilliseconds) => {
-    if (totalMilliseconds === null || isNaN(totalMilliseconds)) return '';
-
-    const MS_PER_SECOND = 1000;
-    const MS_PER_MINUTE = 60 * MS_PER_SECOND;
-    const MS_PER_HOUR = 60 * MS_PER_MINUTE;
-    const MS_PER_DAY = 24 * MS_PER_HOUR;
-
-    const days = Math.floor(totalMilliseconds / MS_PER_DAY);
-    let remainderMs = totalMilliseconds % MS_PER_DAY; // Use let for remainderMs
-
-    const hrs = Math.floor(remainderMs / MS_PER_HOUR);
-    remainderMs %= MS_PER_HOUR; // Update remainderMs
-
-    const mins = Math.floor(remainderMs / MS_PER_MINUTE);
-    remainderMs %= MS_PER_MINUTE; // Update remainderMs
-
-    const secs = Math.floor(remainderMs / MS_PER_SECOND); // Get whole seconds
-    const millisecs = remainderMs % MS_PER_SECOND; // Get remaining milliseconds
-
-    let result = '';
-    if (days > 0) result += `${days}d `;
-    if (hrs > 0 || days > 0) result += `${hrs}h `;
-    if (mins > 0 || hrs > 0 || days > 0) result += `${mins}m `;
-    result += `${secs}s `; // Now this will be a whole number of seconds
-    result += `${millisecs}ms`;
-
-    return result.trim();
-  };
 
   const renderItem = ({ item, index }) => {
     const current = new Date(item);

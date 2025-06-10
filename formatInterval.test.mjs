@@ -1,7 +1,10 @@
-// test/formatInterval.test.js
+// # To run your tests with the formatInterval logs ENABLED:
+// $env:ENABLE_FORMAT_INTERVAL_LOGS="true"; node ./formatInterval.test.mjs
 
-// Import formatInterval from your util.js file
-import { formatInterval } from './util'; // Adjust path based on your file structure
+// # To run your tests with the formatInterval logs DISABLED (default if variable is not set or not 'true'):
+// node ./formatInterval.test.mjs
+
+import { formatInterval } from './util.mjs'; // Adjust path based on your file structure
 
 // --- Test Driver (same as before) ---
 const testCases = [
