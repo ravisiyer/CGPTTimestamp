@@ -10,6 +10,8 @@ import {
   Platform,
   StatusBar,
   useColorScheme,
+  Modal, 
+  Linking, // For opening URLs
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
@@ -21,6 +23,7 @@ const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
 export default function App() {
   const [timestamps, setTimestamps] = useState([]);
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false); 
   const isDark = useColorScheme() === 'dark';
   const styles = useStyles(isDark);
 
@@ -143,6 +146,11 @@ const renderItem = ({ item, index }) => {
   );
 };
 
+  const openBlogLink = () => {
+    const url = 'https://raviswdev.blogspot.com/2025/06/using-chatgpt-to-write-react-native.html';
+    Linking.openURL(url).catch(err => console.error("Couldn't load page", err));
+  };
+
   return (
     <SafeAreaView style={[
       styles.container,
@@ -160,7 +168,8 @@ const renderItem = ({ item, index }) => {
           <Button title="Add TS" onPress={addTimestamp} />
           <Button title="Export" onPress={exportTimestamps} />
           <Button color="red" title="Clear" onPress={clearTimestamps} />
-          <Button title="Info" onPress={() => {}} />
+          <Button title="Info" onPress={() => setIsInfoModalVisible(true)} /> 
+          {/* <Button title="Info" onPress={() => {}} /> */}
         </View>
         {/* <Button title="Export to File" onPress={exportTimestamps} />
         <Button color="red" title="Clear All" onPress={clearTimestamps} /> */}
@@ -175,6 +184,46 @@ const renderItem = ({ item, index }) => {
           <Button title="Add Timestamp" onPress={addTimestamp} />
         </View>
       </View>
+      {/* Info Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isInfoModalVisible}
+        onRequestClose={() => {
+          setIsInfoModalVisible(!isInfoModalVisible);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
+            <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>About This App</Text>
+            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+              This is a very simple launch and one-touch-add timestamp recorder app with no text associated with the timestamp. It automatically creates a timestamp when the app is launched.
+            </Text>
+            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+              <Text style={{ fontWeight: 'bold' }}>Clear All button:</Text> Clears all timestamps.
+            </Text>
+            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+              <Text style={{ fontWeight: 'bold' }}>Add button:</Text> Adds current date & time as a timestamp and shows the interval from last timestamp.
+            </Text>
+            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+              <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini 
+            </Text>
+            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+              <Text style={{ fontWeight: 'bold' }}>App date:</Text> 10 Jun. 2025
+            </Text>
+            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+              <Text style={{ fontWeight: 'bold' }}>App blog post:</Text>{' '}
+              <Text style={{ color: isDark ? '#87CEEB' : 'blue', textDecorationLine: 'underline' }} onPress={openBlogLink}>
+                Using ChatGPT and Gemini to write React Native and Expo Timestamp app (web and mobile)
+              </Text>
+            </Text>
+            <Button
+              title="Dismiss"
+              onPress={() => setIsInfoModalVisible(false)}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -185,7 +234,7 @@ const useStyles = (isDark) =>
       flex: 1,
       padding: 20, // Strangely padding has no impact on web but has on Android
       paddingTop: 10,     // paddingTop and paddingBottom have impact both on web and Android
-      paddingBottom: isExpoGo ? 40 : 10, // Extra padding only in Expo Go as otherwise it sometimes
+      paddingBottom: isExpoGo ? 50 : 10, // Extra padding only in Expo Go as otherwise it sometimes
                           // shows button behind Android's bottom navigation; No issue for production
       // paddingBottom: 10,
       // marginTop: 30,
@@ -224,5 +273,39 @@ const useStyles = (isDark) =>
     bottomButtons: {
       // marginVertical: 10,
       gap: 10, // You can use padding/margin if `gap` is unsupported
+    },
+      centeredView: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.5)', // Dim background when modal is open
+    },
+    modalView: {
+      margin: 20,
+      borderRadius: 20,
+      padding: 35,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 5,
+      width: '90%', // Adjust width as needed
+      maxWidth: 600, // Max width for larger screens
+    },
+    modalTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      marginBottom: 15,
+      textAlign: 'center',
+    },
+    modalText: {
+      marginBottom: 10,
+      fontSize: 16,
+      textAlign: 'left', // Align text to the left for readability
+      width: '100%', // Ensure text takes full width
     },
   });
