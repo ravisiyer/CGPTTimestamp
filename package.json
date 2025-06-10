@@ -4,7 +4,7 @@
   "homepage": "https://ravisiyer.github.io/CGPTTimestamp",
   "main": "index.js",
   "scripts": {
-    "predeploy": "npx expo export -p web",
+    "predeploy": "npx expo export -p web && copy dist-fix\\.nojekyll dist\\ && node ./dist-fix/fix-index-html.js",
     "deploy": "npx gh-pages -d dist",
     "start": "expo start",
     "android": "expo run:android",

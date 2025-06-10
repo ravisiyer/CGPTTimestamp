@@ -14,8 +14,10 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import Constants from 'expo-constants';
 
 const STORAGE_KEY = '@timestamp_list';
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
 export default function App() {
   const [timestamps, setTimestamps] = useState([]);
@@ -177,7 +179,9 @@ const useStyles = (isDark) =>
       flex: 1,
       padding: 20, // Strangely padding has no impact on web but has on Android
       paddingTop: 10,     // paddingTop and paddingBottom have impact both on web and Android
-      paddingBottom: 10,
+      paddingBottom: isExpoGo ? 40 : 10, // Extra padding only in Expo Go as otherwise it sometimes
+                          // shows button behind Android's bottom navigation; No issue for production
+      // paddingBottom: 10,
       // marginTop: 30,
       backgroundColor: isDark ? '#000' : '#fff',
     },
