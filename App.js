@@ -156,8 +156,14 @@ const renderItem = ({ item, index }) => {
 
       <View style={styles.inner}>
         <Text style={styles.title}>Timestamp Tracker</Text>
-        <Button title="Export to File" onPress={exportTimestamps} />
-        <Button color="red" title="Clear All" onPress={clearTimestamps} />
+        <View style={styles.buttonRow}>
+          <Button title="Add TS" onPress={addTimestamp} />
+          <Button title="Export" onPress={exportTimestamps} />
+          <Button color="red" title="Clear" onPress={clearTimestamps} />
+          <Button title="Info" onPress={() => {}} />
+        </View>
+        {/* <Button title="Export to File" onPress={exportTimestamps} />
+        <Button color="red" title="Clear All" onPress={clearTimestamps} /> */}
         <FlatList
           style={styles.list}
           contentContainerStyle={{ paddingBottom: 0 }}
@@ -196,6 +202,11 @@ const useStyles = (isDark) =>
       fontWeight: 'bold',
       marginBottom: 20,
       color: isDark ? '#fff' : '#000',
+    },
+    buttonRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginVertical: 10,
     },
     list: {
       flex: 1,
