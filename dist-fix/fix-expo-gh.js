@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Config
-const repoName = 'CGPTTimestamp';
+const repoName = '/CGPTTimestamp';
 const distDir = path.join(__dirname, '..', 'dist');
 const fixDir = path.join(__dirname);
 const nojekyllSrc = path.join(fixDir, '.nojekyll');
