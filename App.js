@@ -18,6 +18,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import Constants from 'expo-constants';
 import { formatInterval } from './util.mjs';
+import * as Localization from 'expo-localization';
 
 const STORAGE_KEY = '@timestamp_list';
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
@@ -118,18 +119,51 @@ export default function App() {
       ? new Date(timestamps[index + 1])
       : null;
 
-    const intervalMilliseconds = prev != null ? Math.abs(current - prev) : null; 
+    const userLocale = Localization.getLocales()[0].languageTag; 
+    const dateTimePart = current.toLocaleString(userLocale, {
+      year: 'numeric',
+      month: 'short',    // e.g., Jun 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: true,      // This will adapt to the locale's preference (e.g., false for many European locales)
+    });
+
+    const milliseconds = String(current.getMilliseconds()).padStart(3, '0');
+    const formattedTimestampWithMs = `${dateTimePart} (${milliseconds}ms)`;
+
+    const intervalMilliseconds = prev != null ? Math.abs(current - prev) : null;
     const interval = intervalMilliseconds != null ? formatInterval(intervalMilliseconds) : null;
 
     const isLastItem = index === timestamps.length - 1;
 
     return (
       <View style={[styles.item, isLastItem && { marginBottom: 0 }]}>
-        <Text style={styles.text}>{current.toLocaleString()}</Text>
+        <Text style={styles.text}>{formattedTimestampWithMs}</Text>
         {interval && <Text style={styles.text}>Interval: {interval}</Text>}
       </View>
     );
-  };
+  };  
+
+  // const renderItem = ({ item, index }) => {
+  //   const current = new Date(item);
+  //   const prev = timestamps[index + 1]
+  //     ? new Date(timestamps[index + 1])
+  //     : null;
+
+  //   const intervalMilliseconds = prev != null ? Math.abs(current - prev) : null; 
+  //   const interval = intervalMilliseconds != null ? formatInterval(intervalMilliseconds) : null;
+
+  //   const isLastItem = index === timestamps.length - 1;
+
+  //   return (
+  //     <View style={[styles.item, isLastItem && { marginBottom: 0 }]}>
+  //       <Text style={styles.text}>{current.toLocaleString()}</Text>
+  //       {interval && <Text style={styles.text}>Interval: {interval}</Text>}
+  //     </View>
+  //   );
+  // };
 
   const openBlogLink = () => {
     const url = 'https://raviswdev.blogspot.com/2025/06/using-chatgpt-to-write-react-native.html';
