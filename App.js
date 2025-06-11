@@ -214,7 +214,7 @@ export default function App() {
               <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini 
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ fontWeight: 'bold' }}>App date:</Text> 10 Jun. 2025
+              <Text style={{ fontWeight: 'bold' }}>App date:</Text> 12 Jun. 2025
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
               <Text style={{ fontWeight: 'bold' }}>App blog post:</Text>{' '}
