@@ -74,6 +74,21 @@ export default function App() {
     }
   };
 
+  const formattedTimestamp = (date) => {
+    const userLocale = Localization.getLocales()[0].languageTag;
+    const dateTimePart = date.toLocaleString(userLocale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: true,
+    });
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+    return `${dateTimePart} (${milliseconds}ms)`;
+  };
+
   const exportTimestamps = async () => {
     if (timestamps.length === 0) {
       alert('No timestamps to export.');
@@ -85,9 +100,9 @@ export default function App() {
       .map((t, i) => {
         const next = timestamps[i + 1];
         const interval = next
-          ? formatInterval(new Date(t) - new Date(next)) 
+          ? formatInterval(new Date(t) - new Date(next))
           : '';
-        return `"${new Date(t).toLocaleString()}","${interval}"`;
+        return `"${formattedTimestamp(new Date(t))}","${interval}"`;
       })
       .join('\n');
 
@@ -111,7 +126,7 @@ export default function App() {
         alert('Sharing not available on this platform.');
       }
     }
-  };  
+  };
 
   const renderItem = ({ item, index }) => {
     const current = new Date(item);
@@ -119,19 +134,7 @@ export default function App() {
       ? new Date(timestamps[index + 1])
       : null;
 
-    const userLocale = Localization.getLocales()[0].languageTag; 
-    const dateTimePart = current.toLocaleString(userLocale, {
-      year: 'numeric',
-      month: 'short',    // e.g., Jun 
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-      hour12: true,      // This will adapt to the locale's preference (e.g., false for many European locales)
-    });
-
-    const milliseconds = String(current.getMilliseconds()).padStart(3, '0');
-    const formattedTimestampWithMs = `${dateTimePart} (${milliseconds}ms)`;
+    const formattedTimestampWithMs = formattedTimestamp(current);
 
     const intervalMilliseconds = prev != null ? Math.abs(current - prev) : null;
     const interval = intervalMilliseconds != null ? formatInterval(intervalMilliseconds) : null;
@@ -144,26 +147,7 @@ export default function App() {
         {interval && <Text style={styles.text}>Interval: {interval}</Text>}
       </View>
     );
-  };  
-
-  // const renderItem = ({ item, index }) => {
-  //   const current = new Date(item);
-  //   const prev = timestamps[index + 1]
-  //     ? new Date(timestamps[index + 1])
-  //     : null;
-
-  //   const intervalMilliseconds = prev != null ? Math.abs(current - prev) : null; 
-  //   const interval = intervalMilliseconds != null ? formatInterval(intervalMilliseconds) : null;
-
-  //   const isLastItem = index === timestamps.length - 1;
-
-  //   return (
-  //     <View style={[styles.item, isLastItem && { marginBottom: 0 }]}>
-  //       <Text style={styles.text}>{current.toLocaleString()}</Text>
-  //       {interval && <Text style={styles.text}>Interval: {interval}</Text>}
-  //     </View>
-  //   );
-  // };
+  };
 
   const openBlogLink = () => {
     const url = 'https://raviswdev.blogspot.com/2025/06/using-chatgpt-to-write-react-native.html';
