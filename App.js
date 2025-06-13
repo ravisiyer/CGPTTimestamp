@@ -4,13 +4,13 @@ import {
   Text,
   Button,
   FlatList,
-  Alert,
+  Alert, // Keep Alert for general purpose confirmations (like clear)
   View,
   StyleSheet,
   Platform,
   StatusBar,
   useColorScheme,
-  Modal, 
+  Modal,
   Linking,
   AppState,
 } from 'react-native';
@@ -26,20 +26,22 @@ const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
 export default function App() {
   const [timestamps, setTimestamps] = useState([]);
-  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false); 
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+  // New state for the foreground prompt modal visibility
+  const [isForegroundPromptVisible, setIsForegroundPromptVisible] = useState(false);
   const isDark = useColorScheme() === 'dark';
   const styles = useStyles(isDark);
   const appState = useRef(AppState.currentState);
+  // Ref to store the timeout ID, allowing us to clear it
+  const foregroundPromptTimeoutRef = useRef(null);
 
   // Modified addTimestamp to use functional update for setTimestamps
+  // This function adds a timestamp immediately without asking,
+  // used for initial launch and manual button presses.
   const addTimestamp = async () => {
     const now = new Date().toISOString();
-    // Using the functional update form of setTimestamps ensures
-    // that `prevTimestamps` always has the most up-to-date state.
     setTimestamps(prevTimestamps => {
       const updated = [now, ...prevTimestamps].slice(0, 100);
-      // It's good practice to save to AsyncStorage immediately after
-      // the state has been calculated and before returning it.
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(error => {
         console.error("Error saving timestamp to storage:", error);
       });
@@ -48,21 +50,48 @@ export default function App() {
     });
   };
 
+  // Function to handle adding a timestamp from the foreground prompt.
+  // It clears the timeout and hides the modal before adding.
+  const handleAddTimestampFromPrompt = () => {
+    if (foregroundPromptTimeoutRef.current) {
+      clearTimeout(foregroundPromptTimeoutRef.current);
+      foregroundPromptTimeoutRef.current = null;
+    }
+    setIsForegroundPromptVisible(false);
+    addTimestamp(); // Call the main addTimestamp function
+  };
+
+  // Function to handle not adding a timestamp from the foreground prompt.
+  // It clears the timeout and hides the modal.
+  const handleDoNotAddTimestampFromPrompt = () => {
+    if (foregroundPromptTimeoutRef.current) {
+      clearTimeout(foregroundPromptTimeoutRef.current);
+      foregroundPromptTimeoutRef.current = null;
+    }
+    setIsForegroundPromptVisible(false);
+    console.log("User chose NOT to add timestamp on foreground, or timeout expired.");
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         const parsed = stored ? JSON.parse(stored) : [];
-        
-        // The original code was adding a timestamp here on every load.
-        // This implicitly handles the "app not open, timestamp gets created on open" part.
-        // If 'parsed' contains existing timestamps, this will prepend the new one
-        // without clearing them, unless the list length exceeds 100 and it truncates.
-        const nowOnLoad = new Date().toISOString();
-        const updatedOnLoad = [nowOnLoad, ...parsed].slice(0, 100);
-        setTimestamps(updatedOnLoad);
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedOnLoad));
-        console.log("Timestamps loaded and initial timestamp added/updated:", updatedOnLoad.length);
+
+        setTimestamps(parsed); // Load existing timestamps
+
+        // Add an initial timestamp when the app first loads (cold start)
+        // This timestamp is added unconditionally, as per requirement.
+        // We use a functional update here to ensure it's added to the loaded state.
+        setTimestamps(prevTimestamps => {
+          const nowOnLoad = new Date().toISOString();
+          const updatedOnLoad = [nowOnLoad, ...prevTimestamps].slice(0, 100);
+          AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedOnLoad)).catch(error => {
+            console.error("Error saving initial timestamp on load:", error);
+          });
+          console.log("Initial timestamp added on app launch.");
+          return updatedOnLoad;
+        });
 
       } catch (error) {
         console.error("Error loading timestamps:", error);
@@ -73,27 +102,41 @@ export default function App() {
     // Set up the AppState change listener
     const appStateSubscription = AppState.addEventListener('change', nextAppState => {
       // Check if the app was in the background/inactive and is now active (came to foreground)
-      // This specifically handles the case where the app was already open but not in view.
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        console.log('App has come to the foreground!');
-        // Call addTimestamp, which will now use the latest state due to functional update
-        addTimestamp(); 
+        console.log('App has come to the foreground! Prompting user...');
+        setIsForegroundPromptVisible(true); // Show the prompt modal
+
+        // Set a timeout to dismiss the prompt and NOT add a timestamp after 2 seconds
+        if (foregroundPromptTimeoutRef.current) { // Clear any existing timeout just in case
+          clearTimeout(foregroundPromptTimeoutRef.current);
+        }
+        foregroundPromptTimeoutRef.current = setTimeout(() => {
+          console.log('2-second timeout reached. Dismissing prompt.');
+          handleDoNotAddTimestampFromPrompt(); // Automatically dismiss and do not add
+        }, 5000); 
+        // }, 2000); // 2000 milliseconds = 2 seconds
       }
       // Always update the current app state reference for the next comparison
       appState.current = nextAppState;
     });
 
-    loadData(); // Call loadData on component mount to load existing and add initial timestamp
+    loadData(); // Call loadData on component mount
 
     // Cleanup function for the useEffect hook.
-    // This runs when the component unmounts.
     return () => {
-      // Remove the AppState event listener to prevent memory leaks.
       appStateSubscription.remove();
+      // Clear any pending timeout when component unmounts
+      if (foregroundPromptTimeoutRef.current) {
+        clearTimeout(foregroundPromptTimeoutRef.current);
+        foregroundPromptTimeoutRef.current = null;
+      }
     };
   }, []); // Empty dependency array ensures this effect runs only once on mount
 
   const clearTimestamps = async () => {
+    // Retain Alert.alert for consistency and proper behavior on mobile.
+    // For web, use a custom modal or window.confirm which is blocking.
+    // Given the previous conversation, `window.confirm` for web was acceptable here.
     if (Platform.OS === 'web') {
       const confirm = window.confirm('Clear all timestamps?');
       if (confirm) {
@@ -131,7 +174,12 @@ export default function App() {
 
   const exportTimestamps = async () => {
     if (timestamps.length === 0) {
-      alert('No timestamps to export.');
+      // Use Alert.alert for consistency on mobile, and standard alert for web.
+      if (Platform.OS === 'web') {
+        alert('No timestamps to export.');
+      } else {
+        Alert.alert('Info', 'No timestamps to export.');
+      }
       return;
     }
 
@@ -163,7 +211,7 @@ export default function App() {
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(fileUri);
       } else {
-        alert('Sharing not available on this platform.');
+        Alert.alert('Error', 'Sharing not available on this platform.');
       }
     }
   };
@@ -211,7 +259,7 @@ export default function App() {
           <Button title="Add TS" onPress={addTimestamp} />
           <Button title="Export" onPress={exportTimestamps} />
           <Button color="red" title="Clear" onPress={clearTimestamps} />
-          <Button title="Info" onPress={() => setIsInfoModalVisible(true)} /> 
+          <Button title="Info" onPress={() => setIsInfoModalVisible(true)} />
         </View>
         <FlatList
           style={styles.list}
@@ -224,6 +272,7 @@ export default function App() {
           <Button title="Add Timestamp" onPress={addTimestamp} />
         </View>
       </View>
+
       {/* Info Modal */}
       <Modal
         animationType="slide"
@@ -237,11 +286,11 @@ export default function App() {
           <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
             <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>About This App</Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              This is a very simple launch and one-touch-add timestamp recorder app with no text 
+              This is a very simple launch and one-touch-add timestamp recorder app with no text
               associated with the timestamp. It automatically creates a timestamp when the app is launched.
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ fontWeight: 'bold' }}>Add buttons:</Text> Adds current date & time as a timestamp 
+              <Text style={{ fontWeight: 'bold' }}>Add buttons:</Text> Adds current date & time as a timestamp
               and shows the interval from last timestamp.
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
@@ -251,7 +300,7 @@ export default function App() {
               <Text style={{ fontWeight: 'bold' }}>Clear All button:</Text> Clears all timestamps.
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini 
+              <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
               <Text style={{ fontWeight: 'bold' }}>App date:</Text> 12 Jun. 2025
@@ -269,6 +318,29 @@ export default function App() {
           </View>
         </View>
       </Modal>
+
+      {/* Foreground Prompt Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isForegroundPromptVisible}
+        onRequestClose={handleDoNotAddTimestampFromPrompt} // If user presses back/escape, dismiss
+      >
+        <View style={styles.centeredView}>
+          <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
+            <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000', marginBottom: 20 }]}>
+              Add timestamp (brought to foreground)?
+            </Text>
+            <View style={styles.modalButtonRow}>
+              <Button title="Yes" onPress={handleAddTimestampFromPrompt} />
+              <Button title="No" onPress={handleDoNotAddTimestampFromPrompt} color="red" />
+            </View>
+            <Text style={[styles.modalText, { color: isDark ? '#aaa' : '#666', fontSize: 14, marginTop: 10 }]}>
+              (Auto-dismisses in 5 seconds)
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -277,10 +349,9 @@ const useStyles = (isDark) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      padding: 20, // Strangely padding has no impact on web but has on Android
-      paddingTop: 10,     // paddingTop and paddingBottom have impact both on web and Android
-      paddingBottom: isExpoGo ? 50 : 10, // Extra padding only in Expo Go as otherwise it sometimes
-                          // shows button behind Android's bottom navigation; No issue for production
+      padding: 20,
+      paddingTop: 10,
+      paddingBottom: isExpoGo ? 50 : 10,
       backgroundColor: isDark ? '#000' : '#fff',
     },
     inner: {
@@ -292,7 +363,6 @@ const useStyles = (isDark) =>
     title: {
       fontSize: 24,
       fontWeight: 'bold',
-      // marginBottom: 10,
       color: isDark ? '#fff' : '#000',
     },
     buttonRow: {
@@ -314,7 +384,7 @@ const useStyles = (isDark) =>
       color: isDark ? '#fff' : '#000',
     },
     bottomButtons: {
-      gap: 10, 
+      gap: 10,
     },
     centeredView: {
       flex: 1,
@@ -335,8 +405,8 @@ const useStyles = (isDark) =>
       shadowOpacity: 0.25,
       shadowRadius: 4,
       elevation: 5,
-      width: '90%', // Adjust width as needed
-      maxWidth: 600, // Max width for larger screens
+      width: '90%',
+      maxWidth: 600,
     },
     modalTitle: {
       fontSize: 22,
@@ -347,7 +417,14 @@ const useStyles = (isDark) =>
     modalText: {
       marginBottom: 10,
       fontSize: 16,
-      textAlign: 'left', // Align text to the left for readability
-      width: '100%', // Ensure text takes full width
+      textAlign: 'left',
+      width: '100%',
     },
+    modalButtonRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      width: '100%',
+      marginTop: 15,
+      gap: 10, // Added gap for spacing between buttons
+    }
   });
