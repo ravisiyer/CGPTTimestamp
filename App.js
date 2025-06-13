@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   SafeAreaView,
   Text,
-  Button,
+  Button, // Keep Button for internal modals if preferred, or replace with Pressable
   FlatList,
   Alert,
   View,
@@ -14,16 +14,15 @@ import {
   Linking,
   AppState,
   TextInput,
-  Pressable,
+  Pressable, // Essential for custom buttons
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system'; // CORRECTED: Removed '=>' and added 'as FileSystem'
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import Constants from 'expo-constants';
 import { formatInterval } from './util.mjs';
 import * as Localization from 'expo-localization';
-// Import the desired icon set
-import Feather from 'react-native-vector-icons/Feather'; // Or MaterialCommunityIcons, etc.
+import Feather from 'react-native-vector-icons/Feather'; // Import Feather icons
 
 const STORAGE_KEY = '@timestamp_list';
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
@@ -33,6 +32,9 @@ export default function App() {
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
   const [isForegroundPromptVisible, setIsForegroundPromptVisible] = useState(false);
   const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
+  // New state for Settings modal
+  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
+
   const [currentNoteText, setCurrentNoteText] = useState('');
   const [editingTimestampIndex, setEditingTimestampIndex] = useState(null);
 
@@ -41,7 +43,6 @@ export default function App() {
   const appState = useRef(AppState.currentState);
   const foregroundPromptTimeoutRef = useRef(null);
 
-  // Helper function to update AsyncStorage
   const saveTimestampsToStorage = useCallback(async (data) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -50,7 +51,6 @@ export default function App() {
     }
   }, []);
 
-  // Modified addTimestamp to use functional update for setTimestamps
   const addTimestamp = async () => {
     const now = new Date().toISOString();
     const newTimestampEntry = { time: now, note: '' };
@@ -91,7 +91,7 @@ export default function App() {
           if (typeof item === 'string') {
             return { time: item, note: '' };
           }
-          return { ...item, note: item.note || '' }; // Ensure note property exists for existing objects
+          return { ...item, note: item.note || '' };
         }).filter(item => item && item.time);
 
         setTimestamps(parsed);
@@ -122,7 +122,7 @@ export default function App() {
         foregroundPromptTimeoutRef.current = setTimeout(() => {
           console.log('5-second timeout reached. Dismissing prompt.');
           handleDoNotAddTimestampFromPrompt();
-        }, 5000); // Changed timeout to 5 seconds
+        }, 5000);
       }
       appState.current = nextAppState;
     });
@@ -280,6 +280,13 @@ export default function App() {
     }
   };
 
+  // Placeholder for Settings button action
+  const openSettingsModal = () => {
+    // For now, let's just show an alert, but this could be a new modal later
+    Alert.alert("Settings", "Settings functionality to be implemented.");
+    setIsSettingsModalVisible(true); // Keep this if you plan to use a modal later
+  };
+
   const renderItem = ({ item, index }) => {
     const current = new Date(item.time);
     const prev = timestamps[index + 1]
@@ -341,10 +348,45 @@ export default function App() {
       <View style={styles.inner}>
         <Text style={styles.title}>Timestamp Tracker</Text>
         <View style={styles.buttonRow}>
-          <Button title="Add TS" onPress={addTimestamp} />
-          <Button title="Export" onPress={exportTimestamps} />
-          <Button color="red" title="Clear" onPress={clearTimestamps} />
-          <Button title="Info" onPress={() => setIsInfoModalVisible(true)} />
+          {/* Add TS Button */}
+          <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
+            <View style={styles.iconButtonContent}>
+              <Feather name="plus-circle" size={24} color={isDark ? '#fff' : '#000'} />
+              <Text style={[styles.iconButtonText, { color: isDark ? '#fff' : '#000' }]}>Add TS</Text>
+            </View>
+          </Pressable>
+
+          {/* Export Button */}
+          <Pressable onPress={exportTimestamps} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
+            <View style={styles.iconButtonContent}>
+              <Feather name="share" size={24} color={isDark ? '#fff' : '#000'} />
+              <Text style={[styles.iconButtonText, { color: isDark ? '#fff' : '#000' }]}>Export</Text>
+            </View>
+          </Pressable>
+
+          {/* Clear Button */}
+          <Pressable onPress={clearTimestamps} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
+            <View style={styles.iconButtonContent}>
+              <Feather name="trash-2" size={24} color={'red'} />
+              <Text style={[styles.iconButtonText, { color: 'red' }]}>Clear</Text>
+            </View>
+          </Pressable>
+
+          {/* Info Button */}
+          <Pressable onPress={() => setIsInfoModalVisible(true)} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
+            <View style={styles.iconButtonContent}>
+              <Feather name="info" size={24} color={isDark ? '#fff' : '#000'} />
+              <Text style={[styles.iconButtonText, { color: isDark ? '#fff' : '#000' }]}>Info</Text>
+            </View>
+          </Pressable>
+
+          {/* Settings Button */}
+          <Pressable onPress={openSettingsModal} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
+            <View style={styles.iconButtonContent}>
+              <Feather name="settings" size={24} color={isDark ? '#fff' : '#000'} />
+              <Text style={[styles.iconButtonText, { color: isDark ? '#fff' : '#000' }]}>Settings</Text>
+            </View>
+          </Pressable>
         </View>
         <FlatList
           style={styles.list}
@@ -354,11 +396,17 @@ export default function App() {
           renderItem={renderItem}
         />
         <View style={styles.bottomButtons}>
-          <Button title="Add Timestamp" onPress={addTimestamp} />
+          {/* Large Add Timestamp Button */}
+          <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.largeButton, pressed && styles.largeButtonPressed]}>
+            <View style={styles.largeButtonContent}>
+              <Feather name="plus-circle" size={30} color={isDark ? '#fff' : '#000'} />
+              <Text style={[styles.largeButtonText, { color: isDark ? '#fff' : '#000' }]}>Add Timestamp</Text>
+            </View>
+          </Pressable>
         </View>
       </View>
 
-      {/* Info Modal (unchanged) */}
+      {/* Info Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -375,7 +423,7 @@ export default function App() {
               associated with the timestamp. It automatically creates a timestamp when the app is launched.
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ fontWeight: 'bold' }}>Add buttons:</Text> Adds current date & time as a timestamp
+              <Text style={{ fontWeight: 'bold' }}>Add TS buttons:</Text> Adds current date & time as a timestamp
               and shows the interval from last timestamp.
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
@@ -391,6 +439,7 @@ export default function App() {
               <Text style={{ fontWeight: 'bold' }}>App date:</Text> 12 Jun. 2025
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+              <Text style={{ fontWeight: 'bold' }}>App blog post:</Text>{' '}
               <Text style={{ color: isDark ? '#87CEEB' : 'blue', textDecorationLine: 'underline' }} onPress={openBlogLink}>
                 Using ChatGPT and Gemini to write React Native and Expo Timestamp app (web and mobile)
               </Text>
@@ -467,6 +516,27 @@ export default function App() {
           </View>
         </View>
       </Modal>
+
+      {/* Settings Modal (Placeholder) */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isSettingsModalVisible}
+        onRequestClose={() => setIsSettingsModalVisible(false)}
+      >
+        <View style={styles.centeredView}>
+          <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
+            <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>
+              Settings
+            </Text>
+            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+              This is where settings options will go.
+            </Text>
+            <Button title="Dismiss" onPress={() => setIsSettingsModalVisible(false)} />
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -493,8 +563,41 @@ const useStyles = (isDark) =>
     },
     buttonRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      justifyContent: 'space-around', // Distribute buttons evenly
       marginVertical: 10,
+      flexWrap: 'wrap', // Allow buttons to wrap to next line if space is tight
+      gap: 5, // Small gap between buttons
+    },
+    // Styles for the smaller icon buttons in the top row
+    iconButton: {
+      backgroundColor: isDark ? '#444' : '#ddd',
+      borderRadius: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 5, // Smaller horizontal padding for more compact layout
+      flex: 1, // Allows buttons to share space
+      minWidth: 65, // Ensure a minimum width to prevent squishing
+      maxWidth: 80, // Max width to ensure they don't get too big on wider screens
+      alignItems: 'center',
+      justifyContent: 'center',
+      aspectRatio: 1, // Makes buttons square
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    iconButtonPressed: {
+      opacity: 0.7,
+    },
+    iconButtonContent: {
+      alignItems: 'center', // Center icon and text vertically
+      justifyContent: 'center',
+    },
+    iconButtonText: {
+      fontSize: 11, // Small font size for text below icon
+      marginTop: 2, // Small margin between icon and text
+      fontWeight: 'bold',
+      textAlign: 'center',
     },
     list: {
       flex: 1,
@@ -524,7 +627,7 @@ const useStyles = (isDark) =>
       marginRight: 10,
     },
     pencilIcon: {
-      // No specific styling needed here unless you want to override default size/color from component props
+      // Styling handled by component props
     },
     text: {
       color: isDark ? '#fff' : '#000',
@@ -535,7 +638,36 @@ const useStyles = (isDark) =>
       marginTop: 5,
     },
     bottomButtons: {
-      gap: 10,
+      // No gap here, as the single button will take full width
+      // We'll manage its size and spacing directly in largeButton
+    },
+    // Styles for the wide Add Timestamp button at the bottom
+    largeButton: {
+      backgroundColor: isDark ? '#007bff' : '#007bff', // Example primary color
+      borderRadius: 10,
+      paddingVertical: 15,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 10, // Margin above to separate from list
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+    },
+    largeButtonPressed: {
+      opacity: 0.8,
+    },
+    largeButtonContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10, // Space between icon and text
+    },
+    largeButtonText: {
+      fontSize: 18, // Larger font size for this prominent button
+      fontWeight: 'bold',
+      color: '#fff', // White text for visibility on colored button
     },
     centeredView: {
       flex: 1,
