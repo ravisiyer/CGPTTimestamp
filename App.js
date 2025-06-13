@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   SafeAreaView,
   Text,
@@ -11,7 +11,8 @@ import {
   StatusBar,
   useColorScheme,
   Modal, 
-  Linking, // For opening URLs
+  Linking,
+  AppState,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
@@ -28,30 +29,69 @@ export default function App() {
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false); 
   const isDark = useColorScheme() === 'dark';
   const styles = useStyles(isDark);
+  const appState = useRef(AppState.currentState);
+
+  // Modified addTimestamp to use functional update for setTimestamps
+  const addTimestamp = async () => {
+    const now = new Date().toISOString();
+    // Using the functional update form of setTimestamps ensures
+    // that `prevTimestamps` always has the most up-to-date state.
+    setTimestamps(prevTimestamps => {
+      const updated = [now, ...prevTimestamps].slice(0, 100);
+      // It's good practice to save to AsyncStorage immediately after
+      // the state has been calculated and before returning it.
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(error => {
+        console.error("Error saving timestamp to storage:", error);
+      });
+      console.log(`Timestamp added: ${now}`);
+      return updated;
+    });
+  };
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         const parsed = stored ? JSON.parse(stored) : [];
-        const now = new Date().toISOString();
-        const updated = [now, ...parsed].slice(0, 100);
-        setTimestamps(updated);
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        
+        // The original code was adding a timestamp here on every load.
+        // This implicitly handles the "app not open, timestamp gets created on open" part.
+        // If 'parsed' contains existing timestamps, this will prepend the new one
+        // without clearing them, unless the list length exceeds 100 and it truncates.
+        const nowOnLoad = new Date().toISOString();
+        const updatedOnLoad = [nowOnLoad, ...parsed].slice(0, 100);
+        setTimestamps(updatedOnLoad);
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedOnLoad));
+        console.log("Timestamps loaded and initial timestamp added/updated:", updatedOnLoad.length);
+
       } catch (error) {
         console.error("Error loading timestamps:", error);
         Alert.alert("Error", "Something went wrong while loading timestamps.");
       }
     };
-    loadData();
-  }, []);
 
-  const addTimestamp = async () => {
-    const now = new Date().toISOString();
-    const updated = [now, ...timestamps].slice(0, 100);
-    setTimestamps(updated);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  };
+    // Set up the AppState change listener
+    const appStateSubscription = AppState.addEventListener('change', nextAppState => {
+      // Check if the app was in the background/inactive and is now active (came to foreground)
+      // This specifically handles the case where the app was already open but not in view.
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        console.log('App has come to the foreground!');
+        // Call addTimestamp, which will now use the latest state due to functional update
+        addTimestamp(); 
+      }
+      // Always update the current app state reference for the next comparison
+      appState.current = nextAppState;
+    });
+
+    loadData(); // Call loadData on component mount to load existing and add initial timestamp
+
+    // Cleanup function for the useEffect hook.
+    // This runs when the component unmounts.
+    return () => {
+      // Remove the AppState event listener to prevent memory leaks.
+      appStateSubscription.remove();
+    };
+  }, []); // Empty dependency array ensures this effect runs only once on mount
 
   const clearTimestamps = async () => {
     if (Platform.OS === 'web') {
@@ -150,7 +190,7 @@ export default function App() {
   };
 
   const openBlogLink = () => {
-    const url = 'https://raviswdev.blogspot.com/2025/06/using-chatgpt-to-write-react-native.html';
+    const url = 'https://raviswdev.blogspot.com/2025/06/using-chatgpt-to-write-react-native-timestamp-app.html';
     Linking.openURL(url).catch(err => console.error("Couldn't load page", err));
   };
 
