@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   SafeAreaView,
   Text,
   Button,
   FlatList,
-  Alert, // Keep Alert for general purpose confirmations (like clear)
+  Alert,
   View,
   StyleSheet,
   Platform,
@@ -13,6 +13,8 @@ import {
   Modal,
   Linking,
   AppState,
+  TextInput, // Added TextInput for note editing
+  Pressable, // Added Pressable for clickable list items
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
@@ -27,24 +29,39 @@ const isExpoGo = Constants.executionEnvironment === 'storeClient';
 export default function App() {
   const [timestamps, setTimestamps] = useState([]);
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-  // New state for the foreground prompt modal visibility
   const [isForegroundPromptVisible, setIsForegroundPromptVisible] = useState(false);
+  // New state for the note editor modal visibility
+  const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
+  // State to hold the note text currently being edited
+  const [currentNoteText, setCurrentNoteText] = useState('');
+  // State to store the index of the timestamp being edited
+  const [editingTimestampIndex, setEditingTimestampIndex] = useState(null);
+
   const isDark = useColorScheme() === 'dark';
   const styles = useStyles(isDark);
   const appState = useRef(AppState.currentState);
-  // Ref to store the timeout ID, allowing us to clear it
   const foregroundPromptTimeoutRef = useRef(null);
+
+  // Helper function to update AsyncStorage
+  const saveTimestampsToStorage = useCallback(async (data) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error("Error saving timestamps to storage:", error);
+    }
+  }, []);
 
   // Modified addTimestamp to use functional update for setTimestamps
   // This function adds a timestamp immediately without asking,
   // used for initial launch and manual button presses.
   const addTimestamp = async () => {
     const now = new Date().toISOString();
+    // New timestamp entry is an object with time and an empty note
+    const newTimestampEntry = { time: now, note: '' };
+
     setTimestamps(prevTimestamps => {
-      const updated = [now, ...prevTimestamps].slice(0, 100);
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(error => {
-        console.error("Error saving timestamp to storage:", error);
-      });
+      const updated = [newTimestampEntry, ...prevTimestamps].slice(0, 100);
+      saveTimestampsToStorage(updated); // Save updated data to storage
       console.log(`Timestamp added: ${now}`);
       return updated;
     });
@@ -76,19 +93,25 @@ export default function App() {
     const loadData = async () => {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
-        const parsed = stored ? JSON.parse(stored) : [];
+        let parsed = stored ? JSON.parse(stored) : [];
+
+        // Backward compatibility: If old string-only timestamps exist, convert them to objects
+        parsed = parsed.map(item => {
+          if (typeof item === 'string') {
+            return { time: item, note: '' }; // Convert old string timestamps to object format
+          }
+          return item; // Already an object, ensure it has a note property
+        }).filter(item => item && item.time); // Filter out any potentially malformed entries
 
         setTimestamps(parsed); // Load existing timestamps
 
         // Add an initial timestamp when the app first loads (cold start)
         // This timestamp is added unconditionally, as per requirement.
-        // We use a functional update here to ensure it's added to the loaded state.
         setTimestamps(prevTimestamps => {
           const nowOnLoad = new Date().toISOString();
-          const updatedOnLoad = [nowOnLoad, ...prevTimestamps].slice(0, 100);
-          AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedOnLoad)).catch(error => {
-            console.error("Error saving initial timestamp on load:", error);
-          });
+          const initialTimestampEntry = { time: nowOnLoad, note: '' };
+          const updatedOnLoad = [initialTimestampEntry, ...prevTimestamps].slice(0, 100);
+          saveTimestampsToStorage(updatedOnLoad); // Save initial data to storage
           console.log("Initial timestamp added on app launch.");
           return updatedOnLoad;
         });
@@ -106,15 +129,14 @@ export default function App() {
         console.log('App has come to the foreground! Prompting user...');
         setIsForegroundPromptVisible(true); // Show the prompt modal
 
-        // Set a timeout to dismiss the prompt and NOT add a timestamp after 2 seconds
+        // Set a timeout to dismiss the prompt and NOT add a timestamp after few seconds
         if (foregroundPromptTimeoutRef.current) { // Clear any existing timeout just in case
           clearTimeout(foregroundPromptTimeoutRef.current);
         }
         foregroundPromptTimeoutRef.current = setTimeout(() => {
           console.log('2-second timeout reached. Dismissing prompt.');
           handleDoNotAddTimestampFromPrompt(); // Automatically dismiss and do not add
-        }, 5000); 
-        // }, 2000); // 2000 milliseconds = 2 seconds
+        }, 5000); // 5000 milliseconds = 5 seconds
       }
       // Always update the current app state reference for the next comparison
       appState.current = nextAppState;
@@ -131,12 +153,9 @@ export default function App() {
         foregroundPromptTimeoutRef.current = null;
       }
     };
-  }, []); // Empty dependency array ensures this effect runs only once on mount
+  }, [saveTimestampsToStorage]); // Dependency on saveTimestampsToStorage
 
   const clearTimestamps = async () => {
-    // Retain Alert.alert for consistency and proper behavior on mobile.
-    // For web, use a custom modal or window.confirm which is blocking.
-    // Given the previous conversation, `window.confirm` for web was acceptable here.
     if (Platform.OS === 'web') {
       const confirm = window.confirm('Clear all timestamps?');
       if (confirm) {
@@ -157,7 +176,8 @@ export default function App() {
     }
   };
 
-  const formattedTimestamp = (date) => {
+  const formattedTimestamp = (isoString) => {
+    const date = new Date(isoString);
     const userLocale = Localization.getLocales()[0].languageTag;
     const dateTimePart = date.toLocaleString(userLocale, {
       year: 'numeric',
@@ -174,7 +194,6 @@ export default function App() {
 
   const exportTimestamps = async () => {
     if (timestamps.length === 0) {
-      // Use Alert.alert for consistency on mobile, and standard alert for web.
       if (Platform.OS === 'web') {
         alert('No timestamps to export.');
       } else {
@@ -183,14 +202,22 @@ export default function App() {
       return;
     }
 
-    const header = `"Timestamp","Interval"\n`;
+    // Include "Note" in the header
+    const header = `"Timestamp","Interval","Note"\n`;
     const csvBody = timestamps
-      .map((t, i) => {
-        const next = timestamps[i + 1];
-        const interval = next
-          ? formatInterval(new Date(t) - new Date(next))
+      .map((entry, i) => { // 'entry' is now an object {time, note}
+        const currentTimestamp = new Date(entry.time);
+        const nextEntry = timestamps[i + 1];
+        const nextTimestamp = nextEntry ? new Date(nextEntry.time) : null;
+
+        const interval = nextTimestamp
+          ? formatInterval(currentTimestamp - nextTimestamp)
           : '';
-        return `"${formattedTimestamp(new Date(t))}","${interval}"`;
+
+        // Escape quotes in notes and enclose in double quotes
+        const safeNote = entry.note ? `"${entry.note.replace(/"/g, '""')}"` : '""';
+
+        return `"${formattedTimestamp(entry.time)}","${interval}",${safeNote}`;
       })
       .join('\n');
 
@@ -216,13 +243,74 @@ export default function App() {
     }
   };
 
+  // Function to open the note editing modal
+  const openNoteModal = (index) => {
+    setEditingTimestampIndex(index);
+    // Set the current note text to the existing note, or empty string if none
+    setCurrentNoteText(timestamps[index]?.note || '');
+    setIsNoteModalVisible(true);
+  };
+
+  // Function to save the edited note
+  const saveNote = () => {
+    if (editingTimestampIndex !== null) {
+      setTimestamps(prevTimestamps => {
+        const updated = [...prevTimestamps];
+        if (updated[editingTimestampIndex]) {
+          updated[editingTimestampIndex] = {
+            ...updated[editingTimestampIndex],
+            note: currentNoteText,
+          };
+        }
+        saveTimestampsToStorage(updated);
+        return updated;
+      });
+      setIsNoteModalVisible(false);
+      setEditingTimestampIndex(null);
+      setCurrentNoteText('');
+    }
+  };
+
+  // Function to delete a timestamp entry
+  const deleteTimestamp = () => {
+    if (editingTimestampIndex !== null) {
+      const confirmDelete = () => {
+        setTimestamps(prevTimestamps => {
+          const updated = prevTimestamps.filter((_, idx) => idx !== editingTimestampIndex);
+          saveTimestampsToStorage(updated);
+          return updated;
+        });
+        setIsNoteModalVisible(false);
+        setEditingTimestampIndex(null);
+        setCurrentNoteText('');
+      };
+
+      if (Platform.OS === 'web') {
+        if (window.confirm('Are you sure you want to delete this timestamp?')) {
+          confirmDelete();
+        }
+      } else {
+        Alert.alert(
+          'Confirm Delete',
+          'Are you sure you want to delete this timestamp?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Delete', onPress: confirmDelete, style: 'destructive' },
+          ],
+          { cancelable: true }
+        );
+      }
+    }
+  };
+
+  // Render function for each item in the FlatList
   const renderItem = ({ item, index }) => {
-    const current = new Date(item);
+    const current = new Date(item.time); // Access item.time
     const prev = timestamps[index + 1]
-      ? new Date(timestamps[index + 1])
+      ? new Date(timestamps[index + 1].time) // Access item.time for previous
       : null;
 
-    const formattedTimestampWithMs = formattedTimestamp(current);
+    const formattedTimestampWithMs = formattedTimestamp(item.time); // Pass item.time
 
     const intervalMilliseconds = prev != null ? Math.abs(current - prev) : null;
     const interval = intervalMilliseconds != null ? formatInterval(intervalMilliseconds) : null;
@@ -230,10 +318,23 @@ export default function App() {
     const isLastItem = index === timestamps.length - 1;
 
     return (
-      <View style={[styles.item, isLastItem && { marginBottom: 0 }]}>
+      // Make the entire item pressable to open the note modal
+      <Pressable
+        onPress={() => openNoteModal(index)}
+        style={({ pressed }) => [
+          styles.item,
+          isLastItem && { marginBottom: 0 },
+          pressed && styles.itemPressed // Add visual feedback on press
+        ]}
+      >
         <Text style={styles.text}>{formattedTimestampWithMs}</Text>
         {interval && <Text style={styles.text}>Interval: {interval}</Text>}
-      </View>
+        {item.note ? ( // Conditionally display the note
+          <Text style={styles.noteText} numberOfLines={1} ellipsizeMode="tail">
+            Note: {item.note}
+          </Text>
+        ) : null}
+      </Pressable>
     );
   };
 
@@ -265,7 +366,7 @@ export default function App() {
           style={styles.list}
           contentContainerStyle={{ paddingBottom: 0 }}
           data={timestamps}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(item, index) => item.time + index.toString()} // Key by time + index
           renderItem={renderItem}
         />
         <View style={styles.bottomButtons}>
@@ -273,7 +374,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* Info Modal */}
+      {/* Info Modal (unchanged) */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -319,17 +420,17 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Foreground Prompt Modal */}
+      {/* Foreground Prompt Modal (unchanged) */}
       <Modal
         animationType="fade"
         transparent={true}
         visible={isForegroundPromptVisible}
-        onRequestClose={handleDoNotAddTimestampFromPrompt} // If user presses back/escape, dismiss
+        onRequestClose={handleDoNotAddTimestampFromPrompt}
       >
         <View style={styles.centeredView}>
           <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
             <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000', marginBottom: 20 }]}>
-              Add timestamp (brought to foreground)?
+              Add timestamp (Brought into foreground)?
             </Text>
             <View style={styles.modalButtonRow}>
               <Button title="Yes" onPress={handleAddTimestampFromPrompt} />
@@ -338,6 +439,48 @@ export default function App() {
             <Text style={[styles.modalText, { color: isDark ? '#aaa' : '#666', fontSize: 14, marginTop: 10 }]}>
               (Auto-dismisses in 5 seconds)
             </Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Timestamp Note Editor Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isNoteModalVisible}
+        onRequestClose={() => setIsNoteModalVisible(false)}
+      >
+        <View style={styles.centeredView}>
+          <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
+            <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>
+              Edit Timestamp Note
+            </Text>
+            {editingTimestampIndex !== null && (
+              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 15 }]}>
+                Timestamp: {formattedTimestamp(timestamps[editingTimestampIndex]?.time || '')}
+              </Text>
+            )}
+            <TextInput
+              style={[
+                styles.noteInput,
+                {
+                  backgroundColor: isDark ? '#444' : '#fff',
+                  color: isDark ? '#eee' : '#000',
+                  borderColor: isDark ? '#666' : '#ccc',
+                },
+              ]}
+              placeholder="Add a note..."
+              placeholderTextColor={isDark ? '#888' : '#aaa'}
+              multiline={true}
+              numberOfLines={4}
+              value={currentNoteText}
+              onChangeText={setCurrentNoteText}
+            />
+            <View style={styles.modalButtonRow}>
+              <Button title="Save Note" onPress={saveNote} />
+              <Button title="Delete TS" onPress={deleteTimestamp} color="red" />
+              <Button title="Cancel" onPress={() => setIsNoteModalVisible(false)} />
+            </View>
           </View>
         </View>
       </Modal>
@@ -379,9 +522,22 @@ const useStyles = (isDark) =>
       marginBottom: 8,
       backgroundColor: isDark ? '#222' : '#eee',
       borderRadius: 8,
+      elevation: 2, // Android shadow
+      shadowColor: '#000', // iOS shadow
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+    },
+    itemPressed: {
+      opacity: 0.7, // Visual feedback when pressed
     },
     text: {
       color: isDark ? '#fff' : '#000',
+    },
+    noteText: {
+      color: isDark ? '#ccc' : '#555',
+      fontSize: 14,
+      marginTop: 5,
     },
     bottomButtons: {
       gap: 10,
@@ -390,7 +546,7 @@ const useStyles = (isDark) =>
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: 'rgba(0,0,0,0.5)', // Dim background when modal is open
+      backgroundColor: 'rgba(0,0,0,0.5)',
     },
     modalView: {
       margin: 20,
@@ -425,6 +581,16 @@ const useStyles = (isDark) =>
       justifyContent: 'space-around',
       width: '100%',
       marginTop: 15,
-      gap: 10, // Added gap for spacing between buttons
-    }
+      gap: 10,
+    },
+    noteInput: {
+      width: '100%',
+      minHeight: 80,
+      maxHeight: 150, // Prevent it from growing too large
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 10,
+      marginBottom: 20,
+      textAlignVertical: 'top', // For multiline on Android
+    },
   });
