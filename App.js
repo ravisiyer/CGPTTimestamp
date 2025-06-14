@@ -302,7 +302,7 @@ export default function App() {
 
     return (
       <Pressable
-        onPress={() => openNoteModal(index)}
+        onPress={() => openNoteModal(index)} // Fallback for tapping anywhere else on the item
         style={({ pressed }) => [
           styles.item,
           isLastItem && { marginBottom: 0 },
@@ -451,7 +451,7 @@ export default function App() {
                 <Text style={{ fontWeight: 'bold' }}>Clear All button:</Text> Clears all timestamps.
               </Text>
               <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                <Text style={{ fontWeight: 'bold' }}>Tap/Click on timestamp:</Text> Shows modal to view/edit note.  
+                <Text style={{ fontWeight: 'bold' }}>Tap/Click on timestamp:</Text> Shows modal to view/edit note.
               </Text>
               <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                 <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
@@ -655,10 +655,10 @@ const useStyles = (isDark) =>
       gap: 5, // Space between edit and delete icons
     },
     actionIconButton: { // Style for the individual edit/delete icon buttons
-      padding: 5, // Tappable area
-      borderRadius: 5,
+      padding: 12, // Increased tappable area
+      borderRadius: 8, // Slightly more rounded for touch comfort
       // Optional: background for these could be slightly transparent or different
-      // backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
     },
     actionButtonPressed: {
       opacity: 0.5,
