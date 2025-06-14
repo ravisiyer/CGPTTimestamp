@@ -95,6 +95,8 @@ export default function App() {
           const updatedOnLoad = [initialTimestampEntry, ...prevTimestamps].slice(0, 100);
           saveTimestampsToStorage(updatedOnLoad);
           console.log("Initial timestamp added on app launch.");
+          // Set highlight for the initial timestamp on load
+          setHighlightedTimestampId(initialTimestampEntry.id);
           return updatedOnLoad;
         });
 
@@ -775,8 +777,8 @@ const useStyles = (isDark) =>
     },
     infoModalContent: {
       paddingBottom: 20,
-      width: '100%',
-      alignItems: 'flex-start',
+      width: '100%', // Crucial for text wrapping on Android
+      alignItems: 'flex-start', // Align text to the left
     },
     infoDismissButton: {
       width: '100%', // Take full width

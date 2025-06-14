@@ -37,3 +37,4 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 crashlog.txt
+App.js.bak
