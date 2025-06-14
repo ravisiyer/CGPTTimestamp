@@ -106,15 +106,15 @@ export default function App() {
       }
     };
 
-    const appStateSubscription = AppState.addEventListener('change', nextAppState => {
-      appState.current = nextAppState;
-      console.log('App State changed to:', appState.current);
-    });
+    // const appStateSubscription = AppState.addEventListener('change', nextAppState => {
+    //   appState.current = nextAppState;
+    //   console.log('App State changed to:', appState.current);
+    // });
 
     loadData();
 
     return () => {
-      appStateSubscription.remove();
+      // appStateSubscription.remove();
     };
   }, [saveTimestampsToStorage]);
 
@@ -348,7 +348,7 @@ export default function App() {
   };
 
   const openBlogLink = () => {
-    const url = 'https://raviswdev.blogspot.com/2025/06/using-chatgpt-to-write-react-native-timestamp-app.html';
+    const url = 'https://raviswdev.blogspot.com/2025/06/using-chatgpt-to-write-react-native.html';
     Linking.openURL(url).catch(err => console.error("Couldn't load page", err));
   };
 
@@ -366,11 +366,11 @@ export default function App() {
       <View style={styles.inner}>
         <Text style={styles.title}>Timestamp Tracker</Text>
         <View style={styles.buttonRow}>
-          {/* Add TS Button */}
+          {/* Add Button */}
           <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="plus-circle" size={24} color={'#fff'} />
-              <Text style={[styles.iconButtonText, { color: '#fff' }]}>Add TS</Text>
+              <Text style={[styles.iconButtonText, { color: '#fff' }]}>Add</Text>
             </View>
           </Pressable>
 
@@ -440,11 +440,11 @@ export default function App() {
           <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
             <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>About This App</Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              This is a very simple launch and one-touch-add timestamp recorder app with no text
-              associated with the timestamp. It automatically creates a timestamp when the app is launched.
+              This is a launch and one-touch-add timestamp recorder app with facility to add a note
+              to any timestamp entry. It automatically creates a timestamp when the app is launched.
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ fontWeight: 'bold' }}>Add TS buttons:</Text> Adds current date & time as a timestamp
+              <Text style={{ fontWeight: 'bold' }}>Add (Timestamp) buttons:</Text> Adds current date & time as a timestamp
               and shows the interval from last timestamp.
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
@@ -457,7 +457,7 @@ export default function App() {
               <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ fontWeight: 'bold' }}>App date:</Text> 12 Jun. 2025
+              <Text style={{ fontWeight: 'bold' }}>App date:</Text> 14 Jun. 2025
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
               <Text style={{ color: isDark ? '#87CEEB' : 'blue', textDecorationLine: 'underline' }} onPress={openBlogLink}>
