@@ -33,7 +33,6 @@ export default function App() {
   const [isForegroundPromptVisible, setIsForegroundPromptVisible] = useState(false);
   const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
-  // New state to highlight the most recently added timestamp
   const [highlightedTimestampId, setHighlightedTimestampId] = useState(null);
 
   const [currentNoteText, setCurrentNoteText] = useState('');
@@ -43,7 +42,8 @@ export default function App() {
   const styles = useStyles(isDark);
   const appState = useRef(AppState.currentState);
   const foregroundPromptTimeoutRef = useRef(null);
-  const highlightTimeoutRef = useRef(null); // Ref for highlight timeout
+  const highlightTimeoutRef = useRef(null);
+  const flatListRef = useRef(null); // New: Ref for FlatList
 
   // Helper function to update AsyncStorage
   const saveTimestampsToStorage = useCallback(async (data) => {
@@ -57,15 +57,19 @@ export default function App() {
   // Modified addTimestamp to use functional update for setTimestamps
   const addTimestamp = async () => {
     const now = new Date().toISOString();
-    // Add a unique ID to each timestamp entry for reliable highlighting
     const newTimestampEntry = { id: Date.now().toString(), time: now, note: '' };
 
     setTimestamps(prevTimestamps => {
       const updated = [newTimestampEntry, ...prevTimestamps].slice(0, 100);
       saveTimestampsToStorage(updated);
       console.log(`Timestamp added: ${now}`);
-      // Set the ID of the newly added timestamp to highlight it
       setHighlightedTimestampId(newTimestampEntry.id);
+
+      // Scroll to the top when a new timestamp is added
+      // Ensure flatListRef.current is not null before attempting to scroll
+      if (flatListRef.current) {
+        flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+      }
       return updated;
     });
   };
@@ -94,19 +98,15 @@ export default function App() {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         let parsed = stored ? JSON.parse(stored) : [];
 
-        // Backward compatibility: Convert old string-only timestamps to objects
-        // and ensure 'note' and 'id' properties exist for all entries.
         parsed = parsed.map(item => {
           if (typeof item === 'string') {
             return { id: Date.now().toString() + Math.random().toString(36).substring(2, 8), time: item, note: '' };
           }
-          // Ensure existing objects also have an ID and a note (for older versions)
           return { id: item.id || Date.now().toString() + Math.random().toString(36).substring(2, 8), time: item.time, note: item.note || '' };
-        }).filter(item => item && item.time); // Filter out any potentially malformed entries
+        }).filter(item => item && item.time);
 
         setTimestamps(parsed);
 
-        // Add an initial timestamp when the app first loads (cold start)
         setTimestamps(prevTimestamps => {
           const nowOnLoad = new Date().toISOString();
           const initialTimestampEntry = { id: Date.now().toString(), time: nowOnLoad, note: '' };
@@ -122,7 +122,6 @@ export default function App() {
       }
     };
 
-    // AppState listener
     const appStateSubscription = AppState.addEventListener('change', nextAppState => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         console.log('App has come to the foreground! Prompting user...');
@@ -141,7 +140,6 @@ export default function App() {
 
     loadData();
 
-    // Cleanup for AppState listener and foreground timeout
     return () => {
       appStateSubscription.remove();
       if (foregroundPromptTimeoutRef.current) {
@@ -151,7 +149,6 @@ export default function App() {
     };
   }, [saveTimestampsToStorage]);
 
-  // Effect to handle the highlight duration
   useEffect(() => {
     if (highlightedTimestampId) {
       if (highlightTimeoutRef.current) {
@@ -159,9 +156,8 @@ export default function App() {
       }
       highlightTimeoutRef.current = setTimeout(() => {
         setHighlightedTimestampId(null);
-      }, 700); // Highlight for 700ms
+      }, 700);
     }
-    // Cleanup for highlight timeout
     return () => {
       if (highlightTimeoutRef.current) {
         clearTimeout(highlightTimeoutRef.current);
@@ -328,7 +324,7 @@ export default function App() {
     const interval = intervalMilliseconds != null ? formatInterval(intervalMilliseconds) : null;
 
     const isLastItem = index === timestamps.length - 1;
-    const isHighlighted = item.id === highlightedTimestampId; // Check if current item is highlighted
+    const isHighlighted = item.id === highlightedTimestampId;
 
     return (
       <Pressable
@@ -337,7 +333,7 @@ export default function App() {
           styles.item,
           isLastItem && { marginBottom: 0 },
           pressed && styles.itemPressed,
-          isHighlighted && styles.highlightedItem // Apply highlighted style
+          isHighlighted && styles.highlightedItem
         ]}
       >
         <View style={styles.itemContentRow}>
@@ -420,10 +416,11 @@ export default function App() {
           </Pressable>
         </View>
         <FlatList
+          ref={flatListRef} // Assign the ref to FlatList
           style={styles.list}
           contentContainerStyle={{ paddingBottom: 0 }}
           data={timestamps}
-          keyExtractor={(item) => item.id} // Use item.id as keyExtractor
+          keyExtractor={(item) => item.id}
           renderItem={renderItem}
         />
         <View style={styles.bottomButtons}>
@@ -437,7 +434,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* Info Modal (unchanged) */}
+      {/* Info Modal */}
       <Modal
         animationType="slide"
         transparent={true}
