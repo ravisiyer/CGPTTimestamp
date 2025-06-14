@@ -12,7 +12,7 @@ import {
   useColorScheme,
   Modal,
   Linking,
-  AppState,
+  AppState, // Keep AppState import for appState.current logging if desired, or remove if not needed at all.
   TextInput,
   Pressable,
 } from 'react-native';
@@ -40,7 +40,8 @@ export default function App() {
 
   const isDark = useColorScheme() === 'dark';
   const styles = useStyles(isDark);
-  const appState = useRef(AppState.currentState);
+  // Removed: appState useRef for AppState listener logic, only for logging if needed
+  const appState = useRef(AppState.currentState); // Keeping this only if you want to log app state changes. If not, can remove.
   // Removed: foregroundPromptTimeoutRef ref
   const highlightTimeoutRef = useRef(null);
   const flatListRef = useRef(null);
@@ -85,6 +86,7 @@ export default function App() {
           if (typeof item === 'string') {
             return { id: Date.now().toString() + Math.random().toString(36).substring(2, 8), time: item, note: '' };
           }
+          // Ensure existing objects also have an ID and a note (for older versions)
           return { id: item.id || Date.now().toString() + Math.random().toString(36).substring(2, 8), time: item.time, note: item.note || '' };
         }).filter(item => item && item.time);
 
@@ -99,15 +101,14 @@ export default function App() {
           return updatedOnLoad;
         });
 
-      } catch (error) { // CORRECTED: Removed '=>'
+      } catch (error) {
         console.error("Error loading timestamps:", error);
         Alert.alert("Error", "Something went wrong while loading timestamps.");
       }
     };
 
-    // Modified: AppState listener. It no longer triggers any action on foreground.
+    // AppState listener - now only for logging, no action on foreground
     const appStateSubscription = AppState.addEventListener('change', nextAppState => {
-      // Just log the state change, no action for foregrounding, as per user request.
       appState.current = nextAppState;
       console.log('App State changed to:', appState.current);
     });
@@ -117,10 +118,10 @@ export default function App() {
     // Cleanup for AppState listener
     return () => {
       appStateSubscription.remove();
-      // Removed: cleanup for foregroundPromptTimeoutRef
     };
   }, [saveTimestampsToStorage]);
 
+  // Effect to handle the highlight duration
   useEffect(() => {
     if (highlightedTimestampId) {
       if (highlightTimeoutRef.current) {
@@ -128,8 +129,9 @@ export default function App() {
       }
       highlightTimeoutRef.current = setTimeout(() => {
         setHighlightedTimestampId(null);
-      }, 700);
+      }, 700); // Highlight for 700ms
     }
+    // Cleanup for highlight timeout
     return () => {
       if (highlightTimeoutRef.current) {
         clearTimeout(highlightTimeoutRef.current);
@@ -224,12 +226,14 @@ export default function App() {
     }
   };
 
+  // Opens the note modal for a given index
   const openNoteModal = (index) => {
     setEditingTimestampIndex(index);
     setCurrentNoteText(timestamps[index]?.note || '');
     setIsNoteModalVisible(true);
   };
 
+  // Saves the note for the currently edited timestamp
   const saveNote = () => {
     if (editingTimestampIndex !== null) {
       setTimestamps(prevTimestamps => {
@@ -249,34 +253,36 @@ export default function App() {
     }
   };
 
-  const deleteTimestamp = () => {
-    if (editingTimestampIndex !== null) {
-      const confirmDelete = () => {
-        setTimestamps(prevTimestamps => {
-          const updated = prevTimestamps.filter((_, idx) => idx !== editingTimestampIndex);
-          saveTimestampsToStorage(updated);
-          return updated;
-        });
+  // Deletes a timestamp entry at a given index (called directly from icon)
+  const deleteTimestamp = (indexToDelete) => {
+    const confirmDelete = () => {
+      setTimestamps(prevTimestamps => {
+        const updated = prevTimestamps.filter((_, idx) => idx !== indexToDelete);
+        saveTimestampsToStorage(updated);
+        return updated;
+      });
+      // If modal was open for this entry, close it after deletion
+      if (isNoteModalVisible && editingTimestampIndex === indexToDelete) {
         setIsNoteModalVisible(false);
         setEditingTimestampIndex(null);
         setCurrentNoteText('');
-      };
-
-      if (Platform.OS === 'web') {
-        if (window.confirm('Are you sure you want to delete this timestamp?')) {
-          confirmDelete();
-        }
-      } else {
-        Alert.alert(
-          'Confirm Delete',
-          'Are you sure you want to delete this timestamp?',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', onPress: confirmDelete, style: 'destructive' },
-          ],
-          { cancelable: true }
-        );
       }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to delete this timestamp?')) {
+        confirmDelete();
+      }
+    } else {
+      Alert.alert(
+        'Confirm Delete',
+        'Are you sure you want to delete this timestamp?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', onPress: confirmDelete, style: 'destructive' },
+        ],
+        { cancelable: true }
+      );
     }
   };
 
@@ -300,6 +306,7 @@ export default function App() {
 
     return (
       <Pressable
+        // OnPress for the main area (excluding explicit icon buttons) will open edit modal
         onPress={() => openNoteModal(index)}
         style={({ pressed }) => [
           styles.item,
@@ -317,12 +324,32 @@ export default function App() {
                 Note: {item.note}
               </Text>
             ) : null}
-          </View><Feather
-            name="edit-2"
-            size={20}
-            color={isDark ? '#ccc' : '#555'}
-            style={styles.pencilIcon}
-          />
+          </View>
+          {/* Container for Edit and Delete Icons */}
+          <View style={styles.itemActions}>
+            {/* Edit Icon Button */}
+            <Pressable
+              onPress={() => openNoteModal(index)} // Explicitly open modal
+              style={({ pressed }) => [styles.actionIconButton, pressed && styles.actionButtonPressed]}
+            >
+              <Feather
+                name="edit-2"
+                size={20}
+                color={isDark ? '#ccc' : '#555'}
+              />
+            </Pressable>
+            {/* Delete Icon Button */}
+            <Pressable
+              onPress={() => deleteTimestamp(index)} // Explicitly delete
+              style={({ pressed }) => [styles.actionIconButton, pressed && styles.actionButtonPressed]}
+            >
+              <Feather
+                name="trash-2"
+                size={20}
+                color={'red'} // Make delete icon red
+              />
+            </Pressable>
+          </View>
         </View>
       </Pressable>
     );
@@ -466,9 +493,19 @@ export default function App() {
               Edit Timestamp Note
             </Text>
             {editingTimestampIndex !== null && (
-              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 15 }]}>
-                Timestamp: {formattedTimestamp(timestamps[editingTimestampIndex]?.time || '')}
-              </Text>
+              <>
+                <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 5 }]}>
+                  Timestamp: {formattedTimestamp(timestamps[editingTimestampIndex]?.time || '')}
+                </Text>
+                {/* Display Interval in Modal */}
+                <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 15 }]}>
+                  Interval: {
+                    timestamps[editingTimestampIndex + 1]
+                      ? formatInterval(new Date(timestamps[editingTimestampIndex]?.time) - new Date(timestamps[editingTimestampIndex + 1]?.time))
+                      : 'N/A'
+                  }
+                </Text>
+              </>
             )}
             <TextInput
               style={[
@@ -482,13 +519,13 @@ export default function App() {
               placeholder="Add a note..."
               placeholderTextColor={isDark ? '#888' : '#aaa'}
               multiline={true}
-              numberOfLines={4}
+              numberOfLines={6} // Increased height
               value={currentNoteText}
               onChangeText={setCurrentNoteText}
             />
             <View style={styles.modalButtonRow}>
               <Button title="Save Note" onPress={saveNote} />
-              <Button title="Delete TS" onPress={deleteTimestamp} color="red" />
+              {/* Removed: Delete TS button from modal */}
               <Button title="Cancel" onPress={() => setIsNoteModalVisible(false)} />
             </View>
           </View>
@@ -606,11 +643,25 @@ const useStyles = (isDark) =>
       alignItems: 'center',
     },
     itemTextContent: {
-      flex: 1,
-      marginRight: 10,
+      flex: 1, // Takes up remaining space
+      marginRight: 10, // Space before icons
+    },
+    itemActions: { // New style for the icon buttons container at the end of the row
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5, // Space between edit and delete icons
+    },
+    actionIconButton: { // Style for the individual edit/delete icon buttons
+      padding: 5, // Tappable area
+      borderRadius: 5,
+      // Optional: background for these could be slightly transparent or different
+      // backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+    },
+    actionButtonPressed: {
+      opacity: 0.5,
     },
     pencilIcon: {
-      // No specific styling needed here unless you want to override default size/color from component props
+      // This style is effectively replaced by actionIconButton for consistency
     },
     text: {
       color: isDark ? '#fff' : '#111', // Darker text for light mode
@@ -671,6 +722,7 @@ const useStyles = (isDark) =>
       elevation: 5,
       width: '90%',
       maxWidth: 600,
+      maxHeight: '80%', // Make modal taller
     },
     modalTitle: {
       fontSize: 22,
@@ -693,8 +745,8 @@ const useStyles = (isDark) =>
     },
     noteInput: {
       width: '100%',
-      minHeight: 80,
-      maxHeight: 150,
+      minHeight: 120, // Increased height
+      maxHeight: 250, // Added max height to prevent overflow on very small screens
       borderWidth: 1,
       borderRadius: 8,
       padding: 10,
