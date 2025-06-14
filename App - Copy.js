@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   SafeAreaView,
   Text,
-  Button,
+  Button, // Keep Button for internal modals if preferred, or replace with Pressable
   FlatList,
   Alert,
   View,
@@ -12,7 +12,7 @@ import {
   useColorScheme,
   Modal,
   Linking,
-  AppState, // Keep AppState import for appState.current logging if desired, or remove if not needed at all.
+  AppState,
   TextInput,
   Pressable,
 } from 'react-native';
@@ -30,7 +30,6 @@ const isExpoGo = Constants.executionEnvironment === 'storeClient';
 export default function App() {
   const [timestamps, setTimestamps] = useState([]);
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-  // Removed: isForegroundPromptVisible state
   const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [highlightedTimestampId, setHighlightedTimestampId] = useState(null);
@@ -40,13 +39,10 @@ export default function App() {
 
   const isDark = useColorScheme() === 'dark';
   const styles = useStyles(isDark);
-  // Removed: appState useRef for AppState listener logic, only for logging if needed
-  const appState = useRef(AppState.currentState); // Keeping this only if you want to log app state changes. If not, can remove.
-  // Removed: foregroundPromptTimeoutRef ref
+  const appState = useRef(AppState.currentState);
   const highlightTimeoutRef = useRef(null);
   const flatListRef = useRef(null);
 
-  // Helper function to update AsyncStorage
   const saveTimestampsToStorage = useCallback(async (data) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -55,7 +51,6 @@ export default function App() {
     }
   }, []);
 
-  // Modified addTimestamp to use functional update for setTimestamps
   const addTimestamp = async () => {
     const now = new Date().toISOString();
     const newTimestampEntry = { id: Date.now().toString(), time: now, note: '' };
@@ -73,9 +68,6 @@ export default function App() {
     });
   };
 
-  // Removed: handleAddTimestampFromPrompt function
-  // Removed: handleDoNotAddTimestampFromPrompt function
-
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -86,7 +78,6 @@ export default function App() {
           if (typeof item === 'string') {
             return { id: Date.now().toString() + Math.random().toString(36).substring(2, 8), time: item, note: '' };
           }
-          // Ensure existing objects also have an ID and a note (for older versions)
           return { id: item.id || Date.now().toString() + Math.random().toString(36).substring(2, 8), time: item.time, note: item.note || '' };
         }).filter(item => item && item.time);
 
@@ -107,7 +98,6 @@ export default function App() {
       }
     };
 
-    // AppState listener - now only for logging, no action on foreground
     const appStateSubscription = AppState.addEventListener('change', nextAppState => {
       appState.current = nextAppState;
       console.log('App State changed to:', appState.current);
@@ -115,13 +105,11 @@ export default function App() {
 
     loadData();
 
-    // Cleanup for AppState listener
     return () => {
       appStateSubscription.remove();
     };
   }, [saveTimestampsToStorage]);
 
-  // Effect to handle the highlight duration
   useEffect(() => {
     if (highlightedTimestampId) {
       if (highlightTimeoutRef.current) {
@@ -129,9 +117,8 @@ export default function App() {
       }
       highlightTimeoutRef.current = setTimeout(() => {
         setHighlightedTimestampId(null);
-      }, 700); // Highlight for 700ms
+      }, 700);
     }
-    // Cleanup for highlight timeout
     return () => {
       if (highlightTimeoutRef.current) {
         clearTimeout(highlightTimeoutRef.current);
@@ -226,14 +213,12 @@ export default function App() {
     }
   };
 
-  // Opens the note modal for a given index
   const openNoteModal = (index) => {
     setEditingTimestampIndex(index);
     setCurrentNoteText(timestamps[index]?.note || '');
     setIsNoteModalVisible(true);
   };
 
-  // Saves the note for the currently edited timestamp
   const saveNote = () => {
     if (editingTimestampIndex !== null) {
       setTimestamps(prevTimestamps => {
@@ -253,7 +238,6 @@ export default function App() {
     }
   };
 
-  // Deletes a timestamp entry at a given index (called directly from icon)
   const deleteTimestamp = (indexToDelete) => {
     const confirmDelete = () => {
       setTimestamps(prevTimestamps => {
@@ -261,7 +245,6 @@ export default function App() {
         saveTimestampsToStorage(updated);
         return updated;
       });
-      // If modal was open for this entry, close it after deletion
       if (isNoteModalVisible && editingTimestampIndex === indexToDelete) {
         setIsNoteModalVisible(false);
         setEditingTimestampIndex(null);
@@ -306,7 +289,6 @@ export default function App() {
 
     return (
       <Pressable
-        // OnPress for the main area (excluding explicit icon buttons) will open edit modal
         onPress={() => openNoteModal(index)}
         style={({ pressed }) => [
           styles.item,
@@ -325,11 +307,9 @@ export default function App() {
               </Text>
             ) : null}
           </View>
-          {/* Container for Edit and Delete Icons */}
           <View style={styles.itemActions}>
-            {/* Edit Icon Button */}
             <Pressable
-              onPress={() => openNoteModal(index)} // Explicitly open modal
+              onPress={() => openNoteModal(index)}
               style={({ pressed }) => [styles.actionIconButton, pressed && styles.actionButtonPressed]}
             >
               <Feather
@@ -338,15 +318,14 @@ export default function App() {
                 color={isDark ? '#ccc' : '#555'}
               />
             </Pressable>
-            {/* Delete Icon Button */}
             <Pressable
-              onPress={() => deleteTimestamp(index)} // Explicitly delete
+              onPress={() => deleteTimestamp(index)}
               style={({ pressed }) => [styles.actionIconButton, pressed && styles.actionButtonPressed]}
             >
               <Feather
                 name="trash-2"
                 size={20}
-                color={'red'} // Make delete icon red
+                color={'red'}
               />
             </Pressable>
           </View>
@@ -374,7 +353,6 @@ export default function App() {
       <View style={styles.inner}>
         <Text style={styles.title}>Timestamp Tracker</Text>
         <View style={styles.buttonRow}>
-          {/* Add TS Button */}
           <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="plus-circle" size={24} color={'#fff'} />
@@ -382,7 +360,6 @@ export default function App() {
             </View>
           </Pressable>
 
-          {/* Export Button */}
           <Pressable onPress={exportTimestamps} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="share" size={24} color={'#fff'} />
@@ -390,7 +367,6 @@ export default function App() {
             </View>
           </Pressable>
 
-          {/* Clear Button */}
           <Pressable onPress={clearTimestamps} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="trash-2" size={24} color={'red'} />
@@ -398,7 +374,6 @@ export default function App() {
             </View>
           </Pressable>
 
-          {/* Info Button */}
           <Pressable onPress={() => setIsInfoModalVisible(true)} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="info" size={24} color={'#fff'} />
@@ -406,7 +381,6 @@ export default function App() {
             </View>
           </Pressable>
 
-          {/* Settings Button */}
           <Pressable onPress={openSettingsModal} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="settings" size={24} color={'#fff'} />
@@ -423,7 +397,6 @@ export default function App() {
           renderItem={renderItem}
         />
         <View style={styles.bottomButtons}>
-          {/* Large Add Timestamp Button */}
           <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.largeButton, pressed && styles.largeButtonPressed]}>
             <View style={styles.largeButtonContent}>
               <Feather name="plus-circle" size={30} color={'#fff'} />
@@ -478,8 +451,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Removed: Foreground Prompt Modal */}
-
       {/* Timestamp Note Editor Modal */}
       <Modal
         animationType="slide"
@@ -497,7 +468,6 @@ export default function App() {
                 <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 5 }]}>
                   Timestamp: {formattedTimestamp(timestamps[editingTimestampIndex]?.time || '')}
                 </Text>
-                {/* Display Interval in Modal */}
                 <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 15 }]}>
                   Interval: {
                     timestamps[editingTimestampIndex + 1]
@@ -519,14 +489,19 @@ export default function App() {
               placeholder="Add a note..."
               placeholderTextColor={isDark ? '#888' : '#aaa'}
               multiline={true}
-              numberOfLines={6} // Increased height
+              numberOfLines={6}
               value={currentNoteText}
               onChangeText={setCurrentNoteText}
             />
             <View style={styles.modalButtonRow}>
-              <Button title="Save Note" onPress={saveNote} />
-              {/* Removed: Delete TS button from modal */}
-              <Button title="Cancel" onPress={() => setIsNoteModalVisible(false)} />
+              {/* Save Note Button */}
+              <Pressable onPress={saveNote} style={({ pressed }) => [styles.modalButton, pressed && styles.modalButtonPressed]}>
+                <Text style={[styles.modalButtonText, { color: '#fff' }]}>Save Note</Text>
+              </Pressable>
+              {/* Cancel Button */}
+              <Pressable onPress={() => setIsNoteModalVisible(false)} style={({ pressed }) => [styles.modalButton, pressed && styles.modalButtonPressed, {backgroundColor: 'grey'}]}>
+                <Text style={[styles.modalButtonText, { color: '#fff' }]}>Cancel</Text>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -742,6 +717,24 @@ const useStyles = (isDark) =>
       width: '100%',
       marginTop: 15,
       gap: 10,
+    },
+    // New styles for modal buttons
+    modalButton: {
+      backgroundColor: '#007bff', // Blue background for Save
+      borderRadius: 8, // Rounded corners
+      paddingVertical: 10,
+      paddingHorizontal: 15,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 1, // Distribute space
+    },
+    modalButtonPressed: {
+      opacity: 0.7,
+    },
+    modalButtonText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#fff', // White text
     },
     noteInput: {
       width: '100%',

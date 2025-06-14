@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   SafeAreaView,
   Text,
-  Button, // Keep Button for internal modals if preferred, or replace with Pressable
+  Button,
   FlatList,
   Alert,
   View,
@@ -26,6 +26,11 @@ import Feather from 'react-native-vector-icons/Feather';
 
 const STORAGE_KEY = '@timestamp_list';
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
+
+// Helper function to generate a highly unique ID
+const generateUniqueId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+};
 
 export default function App() {
   const [timestamps, setTimestamps] = useState([]);
@@ -53,7 +58,8 @@ export default function App() {
 
   const addTimestamp = async () => {
     const now = new Date().toISOString();
-    const newTimestampEntry = { id: Date.now().toString(), time: now, note: '' };
+    // Use the new highly unique ID generator
+    const newTimestampEntry = { id: generateUniqueId(), time: now, note: '' };
 
     setTimestamps(prevTimestamps => {
       const updated = [newTimestampEntry, ...prevTimestamps].slice(0, 100);
@@ -76,16 +82,18 @@ export default function App() {
 
         parsed = parsed.map(item => {
           if (typeof item === 'string') {
-            return { id: Date.now().toString() + Math.random().toString(36).substring(2, 8), time: item, note: '' };
+            // Assign unique ID to old string timestamps
+            return { id: generateUniqueId(), time: item, note: '' };
           }
-          return { id: item.id || Date.now().toString() + Math.random().toString(36).substring(2, 8), time: item.time, note: item.note || '' };
+          // Ensure existing objects also have a unique ID (for older versions) and a note property
+          return { id: item.id || generateUniqueId(), time: item.time, note: item.note || '' };
         }).filter(item => item && item.time);
 
         setTimestamps(parsed);
 
         setTimestamps(prevTimestamps => {
           const nowOnLoad = new Date().toISOString();
-          const initialTimestampEntry = { id: Date.now().toString(), time: nowOnLoad, note: '' };
+          const initialTimestampEntry = { id: generateUniqueId(), time: nowOnLoad, note: '' }; // Generate unique ID
           const updatedOnLoad = [initialTimestampEntry, ...prevTimestamps].slice(0, 100);
           saveTimestampsToStorage(updatedOnLoad);
           console.log("Initial timestamp added on app launch.");
@@ -288,8 +296,9 @@ export default function App() {
     const isHighlighted = item.id === highlightedTimestampId;
 
     return (
+      // The overall Pressable now specifically handles opening the Note Modal if the action icons are NOT pressed
       <Pressable
-        onPress={() => openNoteModal(index)}
+        onPress={() => openNoteModal(index)} // This will open the note modal when any part of the item is pressed, EXCEPT the action icons below.
         style={({ pressed }) => [
           styles.item,
           isLastItem && { marginBottom: 0 },
@@ -308,7 +317,9 @@ export default function App() {
             ) : null}
           </View>
           <View style={styles.itemActions}>
+            {/* Edit Icon Button */}
             <Pressable
+              // Explicitly opens the note modal. This pressable overrides the parent's onPress for its area.
               onPress={() => openNoteModal(index)}
               style={({ pressed }) => [styles.actionIconButton, pressed && styles.actionButtonPressed]}
             >
@@ -318,7 +329,9 @@ export default function App() {
                 color={isDark ? '#ccc' : '#555'}
               />
             </Pressable>
+            {/* Delete Icon Button */}
             <Pressable
+              // Explicitly deletes the timestamp. This pressable overrides the parent's onPress for its area.
               onPress={() => deleteTimestamp(index)}
               style={({ pressed }) => [styles.actionIconButton, pressed && styles.actionButtonPressed]}
             >
@@ -353,6 +366,7 @@ export default function App() {
       <View style={styles.inner}>
         <Text style={styles.title}>Timestamp Tracker</Text>
         <View style={styles.buttonRow}>
+          {/* Add TS Button */}
           <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="plus-circle" size={24} color={'#fff'} />
@@ -360,6 +374,7 @@ export default function App() {
             </View>
           </Pressable>
 
+          {/* Export Button */}
           <Pressable onPress={exportTimestamps} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="share" size={24} color={'#fff'} />
@@ -367,6 +382,7 @@ export default function App() {
             </View>
           </Pressable>
 
+          {/* Clear Button */}
           <Pressable onPress={clearTimestamps} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="trash-2" size={24} color={'red'} />
@@ -374,6 +390,7 @@ export default function App() {
             </View>
           </Pressable>
 
+          {/* Info Button */}
           <Pressable onPress={() => setIsInfoModalVisible(true)} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="info" size={24} color={'#fff'} />
@@ -381,12 +398,15 @@ export default function App() {
             </View>
           </Pressable>
 
+          {/* Settings Button - COMMENTED OUT as per user request */}
+          {/*
           <Pressable onPress={openSettingsModal} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="settings" size={24} color={'#fff'} />
               <Text style={[styles.iconButtonText, { color: '#fff' }]}>Settings</Text>
             </View>
           </Pressable>
+          */}
         </View>
         <FlatList
           ref={flatListRef}
@@ -397,6 +417,7 @@ export default function App() {
           renderItem={renderItem}
         />
         <View style={styles.bottomButtons}>
+          {/* Large Add Timestamp Button */}
           <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.largeButton, pressed && styles.largeButtonPressed]}>
             <View style={styles.largeButtonContent}>
               <Feather name="plus-circle" size={30} color={'#fff'} />
