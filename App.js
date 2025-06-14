@@ -439,7 +439,7 @@ export default function App() {
                 to any timestamp entry. It automatically creates a timestamp when the app is launched.
               </Text>
               <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                <Text style={{ fontWeight: 'bold' }}>Add (Timestamp) buttons:</Text> Adds current date & time as a timestamp
+                <Text style={{ fontWeight: 'bold' }}>Add (Timestamp) buttons:</Text> Adds timestamp
                 and shows the interval from last timestamp.
               </Text>
               <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
@@ -447,6 +447,9 @@ export default function App() {
               </Text>
               <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                 <Text style={{ fontWeight: 'bold' }}>Clear All button:</Text> Clears all timestamps.
+              </Text>
+              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                <Text style={{ fontWeight: 'bold' }}>Tap/Click on timestamp:</Text> Shows modal to view/edit note.  
               </Text>
               <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                 <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
@@ -460,10 +463,10 @@ export default function App() {
                 </Text>
               </Text>
               {/* Added some dummy content to test scrolling, remove later if not needed */}
-              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+              {/* <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-              </Text>
+              </Text> */}
             </ScrollView>
             {/* Dismiss Button - always at the bottom */}
             <Pressable
