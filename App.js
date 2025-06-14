@@ -30,7 +30,7 @@ const isExpoGo = Constants.executionEnvironment === 'storeClient';
 export default function App() {
   const [timestamps, setTimestamps] = useState([]);
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-  const [isForegroundPromptVisible, setIsForegroundPromptVisible] = useState(false);
+  // Removed: isForegroundPromptVisible state
   const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [highlightedTimestampId, setHighlightedTimestampId] = useState(null);
@@ -41,9 +41,9 @@ export default function App() {
   const isDark = useColorScheme() === 'dark';
   const styles = useStyles(isDark);
   const appState = useRef(AppState.currentState);
-  const foregroundPromptTimeoutRef = useRef(null);
+  // Removed: foregroundPromptTimeoutRef ref
   const highlightTimeoutRef = useRef(null);
-  const flatListRef = useRef(null); // New: Ref for FlatList
+  const flatListRef = useRef(null);
 
   // Helper function to update AsyncStorage
   const saveTimestampsToStorage = useCallback(async (data) => {
@@ -65,8 +65,6 @@ export default function App() {
       console.log(`Timestamp added: ${now}`);
       setHighlightedTimestampId(newTimestampEntry.id);
 
-      // Scroll to the top when a new timestamp is added
-      // Ensure flatListRef.current is not null before attempting to scroll
       if (flatListRef.current) {
         flatListRef.current.scrollToOffset({ offset: 0, animated: true });
       }
@@ -74,23 +72,8 @@ export default function App() {
     });
   };
 
-  const handleAddTimestampFromPrompt = () => {
-    if (foregroundPromptTimeoutRef.current) {
-      clearTimeout(foregroundPromptTimeoutRef.current);
-      foregroundPromptTimeoutRef.current = null;
-    }
-    setIsForegroundPromptVisible(false);
-    addTimestamp();
-  };
-
-  const handleDoNotAddTimestampFromPrompt = () => {
-    if (foregroundPromptTimeoutRef.current) {
-      clearTimeout(foregroundPromptTimeoutRef.current);
-      foregroundPromptTimeoutRef.current = null;
-    }
-    setIsForegroundPromptVisible(false);
-    console.log("User chose NOT to add timestamp on foreground, or timeout expired.");
-  };
+  // Removed: handleAddTimestampFromPrompt function
+  // Removed: handleDoNotAddTimestampFromPrompt function
 
   useEffect(() => {
     const loadData = async () => {
@@ -116,36 +99,25 @@ export default function App() {
           return updatedOnLoad;
         });
 
-      } catch (error) {
+      } catch (error) { // CORRECTED: Removed '=>'
         console.error("Error loading timestamps:", error);
         Alert.alert("Error", "Something went wrong while loading timestamps.");
       }
     };
 
+    // Modified: AppState listener. It no longer triggers any action on foreground.
     const appStateSubscription = AppState.addEventListener('change', nextAppState => {
-      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        console.log('App has come to the foreground! Prompting user...');
-        setIsForegroundPromptVisible(true);
-
-        if (foregroundPromptTimeoutRef.current) {
-          clearTimeout(foregroundPromptTimeoutRef.current);
-        }
-        foregroundPromptTimeoutRef.current = setTimeout(() => {
-          console.log('5-second timeout reached. Dismissing prompt.');
-          handleDoNotAddTimestampFromPrompt();
-        }, 5000);
-      }
+      // Just log the state change, no action for foregrounding, as per user request.
       appState.current = nextAppState;
+      console.log('App State changed to:', appState.current);
     });
 
     loadData();
 
+    // Cleanup for AppState listener
     return () => {
       appStateSubscription.remove();
-      if (foregroundPromptTimeoutRef.current) {
-        clearTimeout(foregroundPromptTimeoutRef.current);
-        foregroundPromptTimeoutRef.current = null;
-      }
+      // Removed: cleanup for foregroundPromptTimeoutRef
     };
   }, [saveTimestampsToStorage]);
 
@@ -416,7 +388,7 @@ export default function App() {
           </Pressable>
         </View>
         <FlatList
-          ref={flatListRef} // Assign the ref to FlatList
+          ref={flatListRef}
           style={styles.list}
           contentContainerStyle={{ paddingBottom: 0 }}
           data={timestamps}
@@ -479,28 +451,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Foreground Prompt Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isForegroundPromptVisible}
-        onRequestClose={handleDoNotAddTimestampFromPrompt}
-      >
-        <View style={styles.centeredView}>
-          <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
-            <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000', marginBottom: 20 }]}>
-              Add timestamp (Brought into foreground)?
-            </Text>
-            <View style={styles.modalButtonRow}>
-              <Button title="Yes" onPress={handleAddTimestampFromPrompt} />
-              <Button title="No" onPress={handleDoNotAddTimestampFromPrompt} color="red" />
-            </View>
-            <Text style={[styles.modalText, { color: isDark ? '#aaa' : '#666', fontSize: 14, marginTop: 10 }]}>
-              (Auto-dismisses in 5 seconds)
-            </Text>
-          </View>
-        </View>
-      </Modal>
+      {/* Removed: Foreground Prompt Modal */}
 
       {/* Timestamp Note Editor Modal */}
       <Modal
@@ -644,7 +595,6 @@ const useStyles = (isDark) =>
     itemPressed: {
       opacity: 0.7,
     },
-    // New style for the highlight animation
     highlightedItem: {
       backgroundColor: Platform.OS === 'web' ? 'rgba(0, 123, 255, 0.4)' : 'rgba(0, 123, 255, 0.2)', // A temporary light blue flash
       borderWidth: 2,
