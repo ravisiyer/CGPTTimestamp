@@ -33,8 +33,6 @@ export default function App() {
   const [isForegroundPromptVisible, setIsForegroundPromptVisible] = useState(false);
   const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
-  // New state to highlight the most recently added timestamp
-  const [highlightedTimestampId, setHighlightedTimestampId] = useState(null);
 
   const [currentNoteText, setCurrentNoteText] = useState('');
   const [editingTimestampIndex, setEditingTimestampIndex] = useState(null);
@@ -43,9 +41,7 @@ export default function App() {
   const styles = useStyles(isDark);
   const appState = useRef(AppState.currentState);
   const foregroundPromptTimeoutRef = useRef(null);
-  const highlightTimeoutRef = useRef(null); // Ref for highlight timeout
 
-  // Helper function to update AsyncStorage
   const saveTimestampsToStorage = useCallback(async (data) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -54,18 +50,14 @@ export default function App() {
     }
   }, []);
 
-  // Modified addTimestamp to use functional update for setTimestamps
   const addTimestamp = async () => {
     const now = new Date().toISOString();
-    // Add a unique ID to each timestamp entry for reliable highlighting
-    const newTimestampEntry = { id: Date.now().toString(), time: now, note: '' };
+    const newTimestampEntry = { time: now, note: '' };
 
     setTimestamps(prevTimestamps => {
       const updated = [newTimestampEntry, ...prevTimestamps].slice(0, 100);
       saveTimestampsToStorage(updated);
       console.log(`Timestamp added: ${now}`);
-      // Set the ID of the newly added timestamp to highlight it
-      setHighlightedTimestampId(newTimestampEntry.id);
       return updated;
     });
   };
@@ -94,22 +86,18 @@ export default function App() {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         let parsed = stored ? JSON.parse(stored) : [];
 
-        // Backward compatibility: Convert old string-only timestamps to objects
-        // and ensure 'note' and 'id' properties exist for all entries.
         parsed = parsed.map(item => {
           if (typeof item === 'string') {
-            return { id: Date.now().toString() + Math.random().toString(36).substring(2, 8), time: item, note: '' };
+            return { time: item, note: '' };
           }
-          // Ensure existing objects also have an ID and a note (for older versions)
-          return { id: item.id || Date.now().toString() + Math.random().toString(36).substring(2, 8), time: item.time, note: item.note || '' };
-        }).filter(item => item && item.time); // Filter out any potentially malformed entries
+          return { ...item, note: item.note || '' };
+        }).filter(item => item && item.time);
 
         setTimestamps(parsed);
 
-        // Add an initial timestamp when the app first loads (cold start)
         setTimestamps(prevTimestamps => {
           const nowOnLoad = new Date().toISOString();
-          const initialTimestampEntry = { id: Date.now().toString(), time: nowOnLoad, note: '' };
+          const initialTimestampEntry = { time: nowOnLoad, note: '' };
           const updatedOnLoad = [initialTimestampEntry, ...prevTimestamps].slice(0, 100);
           saveTimestampsToStorage(updatedOnLoad);
           console.log("Initial timestamp added on app launch.");
@@ -122,7 +110,6 @@ export default function App() {
       }
     };
 
-    // AppState listener
     const appStateSubscription = AppState.addEventListener('change', nextAppState => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         console.log('App has come to the foreground! Prompting user...');
@@ -141,7 +128,6 @@ export default function App() {
 
     loadData();
 
-    // Cleanup for AppState listener and foreground timeout
     return () => {
       appStateSubscription.remove();
       if (foregroundPromptTimeoutRef.current) {
@@ -150,25 +136,6 @@ export default function App() {
       }
     };
   }, [saveTimestampsToStorage]);
-
-  // Effect to handle the highlight duration
-  useEffect(() => {
-    if (highlightedTimestampId) {
-      if (highlightTimeoutRef.current) {
-        clearTimeout(highlightTimeoutRef.current);
-      }
-      highlightTimeoutRef.current = setTimeout(() => {
-        setHighlightedTimestampId(null);
-      }, 700); // Highlight for 700ms
-    }
-    // Cleanup for highlight timeout
-    return () => {
-      if (highlightTimeoutRef.current) {
-        clearTimeout(highlightTimeoutRef.current);
-        highlightTimeoutRef.current = null;
-      }
-    };
-  }, [highlightedTimestampId]);
 
   const clearTimestamps = async () => {
     if (Platform.OS === 'web') {
@@ -328,7 +295,6 @@ export default function App() {
     const interval = intervalMilliseconds != null ? formatInterval(intervalMilliseconds) : null;
 
     const isLastItem = index === timestamps.length - 1;
-    const isHighlighted = item.id === highlightedTimestampId; // Check if current item is highlighted
 
     return (
       <Pressable
@@ -336,8 +302,7 @@ export default function App() {
         style={({ pressed }) => [
           styles.item,
           isLastItem && { marginBottom: 0 },
-          pressed && styles.itemPressed,
-          isHighlighted && styles.highlightedItem // Apply highlighted style
+          pressed && styles.itemPressed
         ]}
       >
         <View style={styles.itemContentRow}>
@@ -382,16 +347,16 @@ export default function App() {
           {/* Add TS Button */}
           <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
-              <Feather name="plus-circle" size={24} color={'#fff'} />
-              <Text style={[styles.iconButtonText, { color: '#fff' }]}>Add TS</Text>
+              <Feather name="plus-circle" size={24} color={'#fff'} /> {/* Changed color to white */}
+              <Text style={[styles.iconButtonText, { color: '#fff' }]}>Add TS</Text> {/* Changed color to white */}
             </View>
           </Pressable>
 
           {/* Export Button */}
           <Pressable onPress={exportTimestamps} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
-              <Feather name="share" size={24} color={'#fff'} />
-              <Text style={[styles.iconButtonText, { color: '#fff' }]}>Export</Text>
+              <Feather name="share" size={24} color={'#fff'} /> {/* Changed color to white */}
+              <Text style={[styles.iconButtonText, { color: '#fff' }]}>Export</Text> {/* Changed color to white */}
             </View>
           </Pressable>
 
@@ -406,16 +371,16 @@ export default function App() {
           {/* Info Button */}
           <Pressable onPress={() => setIsInfoModalVisible(true)} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
-              <Feather name="info" size={24} color={'#fff'} />
-              <Text style={[styles.iconButtonText, { color: '#fff' }]}>Info</Text>
+              <Feather name="info" size={24} color={'#fff'} /> {/* Changed color to white */}
+              <Text style={[styles.iconButtonText, { color: '#fff' }]}>Info</Text> {/* Changed color to white */}
             </View>
           </Pressable>
 
           {/* Settings Button */}
           <Pressable onPress={openSettingsModal} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
-              <Feather name="settings" size={24} color={'#fff'} />
-              <Text style={[styles.iconButtonText, { color: '#fff' }]}>Settings</Text>
+              <Feather name="settings" size={24} color={'#fff'} /> {/* Changed color to white */}
+              <Text style={[styles.iconButtonText, { color: '#fff' }]}>Settings</Text> {/* Changed color to white */}
             </View>
           </Pressable>
         </View>
@@ -423,21 +388,21 @@ export default function App() {
           style={styles.list}
           contentContainerStyle={{ paddingBottom: 0 }}
           data={timestamps}
-          keyExtractor={(item) => item.id} // Use item.id as keyExtractor
+          keyExtractor={(item, index) => item.time + index.toString()}
           renderItem={renderItem}
         />
         <View style={styles.bottomButtons}>
           {/* Large Add Timestamp Button */}
           <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.largeButton, pressed && styles.largeButtonPressed]}>
             <View style={styles.largeButtonContent}>
-              <Feather name="plus-circle" size={30} color={'#fff'} />
-              <Text style={[styles.largeButtonText, { color: '#fff' }]}>Add Timestamp</Text>
+              <Feather name="plus-circle" size={30} color={'#fff'} /> {/* Changed color to white */}
+              <Text style={[styles.largeButtonText, { color: '#fff' }]}>Add Timestamp</Text> {/* Changed color to white */}
             </View>
           </Pressable>
         </View>
       </View>
 
-      {/* Info Modal (unchanged) */}
+      {/* Info Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -470,6 +435,7 @@ export default function App() {
               <Text style={{ fontWeight: 'bold' }}>App date:</Text> 12 Jun. 2025
             </Text>
             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+              <Text style={{ fontWeight: 'bold' }}>App blog post:</Text>{' '}
               <Text style={{ color: isDark ? '#87CEEB' : 'blue', textDecorationLine: 'underline' }} onPress={openBlogLink}>
                 Using ChatGPT and Gemini to write React Native and Expo Timestamp app (web and mobile)
               </Text>
@@ -599,7 +565,7 @@ const useStyles = (isDark) =>
       gap: 5,
     },
     iconButton: {
-      backgroundColor: '#007bff', // Consistent blue
+      backgroundColor: '#007bff', // Changed to consistent blue
       borderRadius: 8,
       paddingVertical: 8,
       paddingHorizontal: 5,
@@ -626,7 +592,7 @@ const useStyles = (isDark) =>
       fontSize: 11,
       marginTop: 2,
       fontWeight: 'bold',
-      color: '#fff', // Consistent white
+      color: '#fff', // Changed to consistent white
       textAlign: 'center',
     },
     list: {
@@ -636,7 +602,7 @@ const useStyles = (isDark) =>
     item: {
       padding: 10,
       marginBottom: 8,
-      backgroundColor: isDark ? '#222' : '#f9f9f9', // Slightly off-white for light mode
+      backgroundColor: isDark ? '#222' : '#eee',
       borderRadius: 8,
       elevation: 2,
       shadowColor: '#000',
@@ -646,12 +612,6 @@ const useStyles = (isDark) =>
     },
     itemPressed: {
       opacity: 0.7,
-    },
-    // New style for the highlight animation
-    highlightedItem: {
-      backgroundColor: Platform.OS === 'web' ? 'rgba(0, 123, 255, 0.4)' : 'rgba(0, 123, 255, 0.2)', // A temporary light blue flash
-      borderWidth: 2,
-      borderColor: '#007bff',
     },
     itemContentRow: {
       flexDirection: 'row',
@@ -666,15 +626,15 @@ const useStyles = (isDark) =>
       // No specific styling needed here unless you want to override default size/color from component props
     },
     text: {
-      color: isDark ? '#fff' : '#111', // Darker text for light mode
+      color: isDark ? '#fff' : '#000',
     },
     noteText: {
-      color: isDark ? '#ccc' : '#444', // Darker note text for light mode
+      color: isDark ? '#ccc' : '#555',
       fontSize: 14,
       marginTop: 5,
     },
     bottomButtons: {
-      backgroundColor: isDark ? '#000' : '#fff', // Ensure background matches container in dark/light mode
+      // No gap here, as the single button will take full width
     },
     largeButton: {
       backgroundColor: '#007bff', // Consistent blue
