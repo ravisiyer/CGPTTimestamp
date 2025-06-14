@@ -15,6 +15,7 @@ import {
   AppState,
   TextInput,
   Pressable,
+  ScrollView, // Import ScrollView
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
@@ -58,7 +59,6 @@ export default function App() {
 
   const addTimestamp = async () => {
     const now = new Date().toISOString();
-    // Use the new highly unique ID generator
     const newTimestampEntry = { id: generateUniqueId(), time: now, note: '' };
 
     setTimestamps(prevTimestamps => {
@@ -82,10 +82,8 @@ export default function App() {
 
         parsed = parsed.map(item => {
           if (typeof item === 'string') {
-            // Assign unique ID to old string timestamps
             return { id: generateUniqueId(), time: item, note: '' };
           }
-          // Ensure existing objects also have a unique ID (for older versions) and a note property
           return { id: item.id || generateUniqueId(), time: item.time, note: item.note || '' };
         }).filter(item => item && item.time);
 
@@ -93,7 +91,7 @@ export default function App() {
 
         setTimestamps(prevTimestamps => {
           const nowOnLoad = new Date().toISOString();
-          const initialTimestampEntry = { id: generateUniqueId(), time: nowOnLoad, note: '' }; // Generate unique ID
+          const initialTimestampEntry = { id: generateUniqueId(), time: nowOnLoad, note: '' };
           const updatedOnLoad = [initialTimestampEntry, ...prevTimestamps].slice(0, 100);
           saveTimestampsToStorage(updatedOnLoad);
           console.log("Initial timestamp added on app launch.");
@@ -106,15 +104,19 @@ export default function App() {
       }
     };
 
-    // const appStateSubscription = AppState.addEventListener('change', nextAppState => {
-    //   appState.current = nextAppState;
-    //   console.log('App State changed to:', appState.current);
-    // });
+    // AppState listener - now only for logging, no action on foreground
+    // You can remove this useEffect entirely if you don't need app state logging.
+    /*
+    const appStateSubscription = AppState.addEventListener('change', nextAppState => {
+      appState.current = nextAppState;
+      console.log('App State changed to:', appState.current);
+    });
+    */
 
     loadData();
 
     return () => {
-      // appStateSubscription.remove();
+      // appStateSubscription.remove(); // Removed as listener is commented out
     };
   }, [saveTimestampsToStorage]);
 
@@ -125,8 +127,9 @@ export default function App() {
       }
       highlightTimeoutRef.current = setTimeout(() => {
         setHighlightedTimestampId(null);
-      }, 700);
+      }, 700); // Highlight for 700ms
     }
+    // Cleanup for highlight timeout
     return () => {
       if (highlightTimeoutRef.current) {
         clearTimeout(highlightTimeoutRef.current);
@@ -296,9 +299,8 @@ export default function App() {
     const isHighlighted = item.id === highlightedTimestampId;
 
     return (
-      // The overall Pressable now specifically handles opening the Note Modal if the action icons are NOT pressed
       <Pressable
-        onPress={() => openNoteModal(index)} // This will open the note modal when any part of the item is pressed, EXCEPT the action icons below.
+        onPress={() => openNoteModal(index)}
         style={({ pressed }) => [
           styles.item,
           isLastItem && { marginBottom: 0 },
@@ -317,9 +319,7 @@ export default function App() {
             ) : null}
           </View>
           <View style={styles.itemActions}>
-            {/* Edit Icon Button */}
             <Pressable
-              // Explicitly opens the note modal. This pressable overrides the parent's onPress for its area.
               onPress={() => openNoteModal(index)}
               style={({ pressed }) => [styles.actionIconButton, pressed && styles.actionButtonPressed]}
             >
@@ -329,9 +329,7 @@ export default function App() {
                 color={isDark ? '#ccc' : '#555'}
               />
             </Pressable>
-            {/* Delete Icon Button */}
             <Pressable
-              // Explicitly deletes the timestamp. This pressable overrides the parent's onPress for its area.
               onPress={() => deleteTimestamp(index)}
               style={({ pressed }) => [styles.actionIconButton, pressed && styles.actionButtonPressed]}
             >
@@ -366,7 +364,6 @@ export default function App() {
       <View style={styles.inner}>
         <Text style={styles.title}>Timestamp Tracker</Text>
         <View style={styles.buttonRow}>
-          {/* Add Button */}
           <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="plus-circle" size={24} color={'#fff'} />
@@ -374,7 +371,6 @@ export default function App() {
             </View>
           </Pressable>
 
-          {/* Export Button */}
           <Pressable onPress={exportTimestamps} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="share" size={24} color={'#fff'} />
@@ -382,7 +378,6 @@ export default function App() {
             </View>
           </Pressable>
 
-          {/* Clear Button */}
           <Pressable onPress={clearTimestamps} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="trash-2" size={24} color={'red'} />
@@ -390,7 +385,6 @@ export default function App() {
             </View>
           </Pressable>
 
-          {/* Info Button */}
           <Pressable onPress={() => setIsInfoModalVisible(true)} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
               <Feather name="info" size={24} color={'#fff'} />
@@ -417,7 +411,6 @@ export default function App() {
           renderItem={renderItem}
         />
         <View style={styles.bottomButtons}>
-          {/* Large Add Timestamp Button */}
           <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.largeButton, pressed && styles.largeButtonPressed]}>
             <View style={styles.largeButtonContent}>
               <Feather name="plus-circle" size={30} color={'#fff'} />
@@ -437,37 +430,48 @@ export default function App() {
         }}
       >
         <View style={styles.centeredView}>
-          <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
-            <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>About This App</Text>
-            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              This is a launch and one-touch-add timestamp recorder app with facility to add a note
-              to any timestamp entry. It automatically creates a timestamp when the app is launched.
-            </Text>
-            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ fontWeight: 'bold' }}>Add (Timestamp) buttons:</Text> Adds current date & time as a timestamp
-              and shows the interval from last timestamp.
-            </Text>
-            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ fontWeight: 'bold' }}>Export button:</Text> Exports timestamps data as .csv.
-            </Text>
-            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ fontWeight: 'bold' }}>Clear All button:</Text> Clears all timestamps.
-            </Text>
-            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
-            </Text>
-            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ fontWeight: 'bold' }}>App date:</Text> 14 Jun. 2025
-            </Text>
-            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-              <Text style={{ color: isDark ? '#87CEEB' : 'blue', textDecorationLine: 'underline' }} onPress={openBlogLink}>
-                Using ChatGPT and Gemini to write React Native and Expo Timestamp app (web and mobile)
+          <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9', justifyContent: 'space-between' }]}>
+            {/* Scrollable content */}
+            <ScrollView contentContainerStyle={styles.infoModalContent}>
+              <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>About This App</Text>
+              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                This is a launch and one-touch-add timestamp recorder app with facility to add a note
+                to any timestamp entry. It automatically creates a timestamp when the app is launched.
               </Text>
-            </Text>
-            <Button
-              title="Dismiss"
+              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                <Text style={{ fontWeight: 'bold' }}>Add (Timestamp) buttons:</Text> Adds current date & time as a timestamp
+                and shows the interval from last timestamp.
+              </Text>
+              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                <Text style={{ fontWeight: 'bold' }}>Export button:</Text> Exports timestamps data as .csv.
+              </Text>
+              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                <Text style={{ fontWeight: 'bold' }}>Clear All button:</Text> Clears all timestamps.
+              </Text>
+              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
+              </Text>
+              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                <Text style={{ fontWeight: 'bold' }}>App date:</Text> 14 Jun. 2025
+              </Text>
+              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                <Text style={{ color: isDark ? '#87CEEB' : 'blue', textDecorationLine: 'underline' }} onPress={openBlogLink}>
+                  Using ChatGPT and Gemini to write React Native and Expo Timestamp app (web and mobile)
+                </Text>
+              </Text>
+              {/* Added some dummy content to test scrolling, remove later if not needed */}
+              <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+              </Text>
+            </ScrollView>
+            {/* Dismiss Button - always at the bottom */}
+            <Pressable
               onPress={() => setIsInfoModalVisible(false)}
-            />
+              style={({ pressed }) => [styles.modalButton, pressed && styles.modalButtonPressed, styles.infoDismissButton]}
+            >
+              <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Dismiss</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -515,13 +519,11 @@ export default function App() {
               onChangeText={setCurrentNoteText}
             />
             <View style={styles.modalButtonRow}>
-              {/* Save Note Button */}
-              <Pressable onPress={saveNote} style={({ pressed }) => [styles.modalButton, pressed && styles.modalButtonPressed]}>
-                <Text style={[styles.modalButtonText, { color: '#fff' }]}>Save Note</Text>
+              <Pressable onPress={saveNote} style={({ pressed }) => [styles.modalButton, pressed && styles.modalButtonPressed, { flex: 1 }]}>
+                <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Save Note</Text>
               </Pressable>
-              {/* Cancel Button */}
-              <Pressable onPress={() => setIsNoteModalVisible(false)} style={({ pressed }) => [styles.modalButton, pressed && styles.modalButtonPressed, {backgroundColor: 'grey'}]}>
-                <Text style={[styles.modalButtonText, { color: '#fff' }]}>Cancel</Text>
+              <Pressable onPress={() => setIsNoteModalVisible(false)} style={({ pressed }) => [styles.modalButton, pressed && styles.modalButtonPressed, {backgroundColor: 'grey', flex: 1}]}>
+                <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Cancel</Text>
               </Pressable>
             </View>
           </View>
@@ -707,7 +709,7 @@ const useStyles = (isDark) =>
       margin: 20,
       borderRadius: 20,
       padding: 35,
-      alignItems: 'center',
+      alignItems: 'center', // Keep for general centering of modal content, overridden by ScrollView width and justifyContent.
       shadowColor: '#000',
       shadowOffset: {
         width: 0,
@@ -719,6 +721,7 @@ const useStyles = (isDark) =>
       width: '90%',
       maxWidth: 600,
       maxHeight: '80%', // Make modal taller
+      justifyContent: 'space-between',
     },
     modalTitle: {
       fontSize: 22,
@@ -730,7 +733,7 @@ const useStyles = (isDark) =>
       marginBottom: 10,
       fontSize: 16,
       textAlign: 'left',
-      width: '100%',
+      // No width: '100%' here, it will naturally wrap within the ScrollView.
     },
     modalButtonRow: {
       flexDirection: 'row',
@@ -739,15 +742,14 @@ const useStyles = (isDark) =>
       marginTop: 15,
       gap: 10,
     },
-    // New styles for modal buttons
     modalButton: {
       backgroundColor: '#007bff', // Blue background for Save
       borderRadius: 8, // Rounded corners
-      paddingVertical: 10,
+      paddingVertical: 14, // Increased padding
       paddingHorizontal: 15,
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1, // Distribute space
+      alignItems: 'center', // Center content horizontally
+      justifyContent: 'center', // Center content vertically
+      // Removed flex: 1 from here
     },
     modalButtonPressed: {
       opacity: 0.7,
@@ -756,15 +758,25 @@ const useStyles = (isDark) =>
       fontSize: 16,
       fontWeight: 'bold',
       color: '#fff', // White text
+      textAlign: 'center', // Ensure text is centered within the button
     },
     noteInput: {
       width: '100%',
-      minHeight: 120, // Increased height
-      maxHeight: 250, // Added max height to prevent overflow on very small screens
+      minHeight: 120,
+      maxHeight: 250,
       borderWidth: 1,
       borderRadius: 8,
       padding: 10,
       marginBottom: 20,
       textAlignVertical: 'top',
+    },
+    infoModalContent: {
+      paddingBottom: 20,
+      width: '100%',
+      alignItems: 'flex-start',
+    },
+    infoDismissButton: {
+      width: '100%', // Take full width
+      marginTop: 20,
     },
   });
