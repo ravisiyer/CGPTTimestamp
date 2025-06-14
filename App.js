@@ -495,10 +495,10 @@ export default function App() {
             </Text>
             {editingTimestampIndex !== null && (
               <>
-                <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 5 }]}>
+                <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 5, alignSelf: 'flex-start' }]}>
                   Timestamp: {formattedTimestamp(timestamps[editingTimestampIndex]?.time || '')}
                 </Text>
-                <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 15 }]}>
+                <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 15, alignSelf: 'flex-start' }]}>
                   Interval: {
                     timestamps[editingTimestampIndex + 1]
                       ? formatInterval(new Date(timestamps[editingTimestampIndex]?.time) - new Date(timestamps[editingTimestampIndex + 1]?.time))
