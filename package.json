@@ -30,5 +30,12 @@
     "@babel/core": "^7.20.0",
     "gh-pages": "^6.3.0"
   },
-  "private": true
+  "private": true,
+  "expo": { 
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "listUnknownPackages": false
+      }
+    }
+  }  
 }
