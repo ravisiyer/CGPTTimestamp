@@ -368,28 +368,29 @@ export default function App() {
         <View style={styles.buttonRow}>
           <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
-              <Feather name="plus-circle" size={24} color={'#fff'} />
+              <Feather name="plus-circle" size={18} color={'#fff'} />
               <Text style={[styles.iconButtonText, { color: '#fff' }]}>Add</Text>
             </View>
           </Pressable>
 
           <Pressable onPress={exportTimestamps} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
-              <Feather name="share" size={24} color={'#fff'} />
+              <Feather name="share" size={18} color={'#fff'} />
               <Text style={[styles.iconButtonText, { color: '#fff' }]}>Export</Text>
             </View>
           </Pressable>
 
-          <Pressable onPress={clearTimestamps} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
-            <View style={styles.iconButtonContent}>
-              <Feather name="trash-2" size={24} color={'red'} />
+          <Pressable onPress={clearTimestamps} style={({ pressed }) => 
+            [styles.iconButton, {backgroundColor: 'rgb(44, 4, 4)'}, pressed && styles.iconButtonPressed]}>
+            <View style={[styles.iconButtonContent, {backgroundColor: 'rgb(44, 4, 4)'}]}>
+              <Feather name="trash-2" size={18} color={'red'} />
               <Text style={[styles.iconButtonText, { color: 'red' }]}>Clear</Text>
             </View>
           </Pressable>
 
           <Pressable onPress={() => setIsInfoModalVisible(true)} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
             <View style={styles.iconButtonContent}>
-              <Feather name="info" size={24} color={'#fff'} />
+              <Feather name="info" size={18} color={'#fff'} />
               <Text style={[styles.iconButtonText, { color: '#fff' }]}>Info</Text>
             </View>
           </Pressable>
@@ -415,7 +416,7 @@ export default function App() {
         <View style={styles.bottomButtons}>
           <Pressable onPress={addTimestamp} style={({ pressed }) => [styles.largeButton, pressed && styles.largeButtonPressed]}>
             <View style={styles.largeButtonContent}>
-              <Feather name="plus-circle" size={30} color={'#fff'} />
+              <Feather name="plus-circle" size={18} color={'#fff'} />
               <Text style={[styles.largeButtonText, { color: '#fff' }]}>Add Timestamp</Text>
             </View>
           </Pressable>
@@ -563,9 +564,12 @@ const useStyles = (isDark) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      padding: 20,
+      // padding: 20, // Seems to have no effect on web!
+      paddingLeft: 20,
+      paddingRight: 20,
       paddingTop: 10,
       paddingBottom: isExpoGo ? 50 : 10,
+      // marginBottom: isExpoGo ? 10 : 0,
       backgroundColor: isDark ? '#000' : '#fff',
     },
     inner: {
@@ -582,18 +586,21 @@ const useStyles = (isDark) =>
     buttonRow: {
       flexDirection: 'row',
       justifyContent: 'space-around',
-      marginVertical: 10,
+      marginTop: 10,
+      // marginVertical: 10,
       flexWrap: 'wrap',
-      gap: 5,
+      // gap: 5,
     },
     iconButton: {
       backgroundColor: '#007bff', // Consistent blue
       borderRadius: 8,
-      paddingVertical: 8,
-      paddingHorizontal: 5,
+      paddingVertical: 2,
+      paddingHorizontal: 2,
       flex: 1,
-      minWidth: 65,
-      maxWidth: 80,
+      minWidth: 45,
+      // minWidth: 65,
+      maxWidth: 50,
+      // maxWidth: 80,
       alignItems: 'center',
       justifyContent: 'center',
       aspectRatio: 1,
@@ -676,15 +683,15 @@ const useStyles = (isDark) =>
     },
     bottomButtons: {
       backgroundColor: isDark ? '#000' : '#fff', // Ensure background matches container in dark/light mode
+      paddingHorizontal: 10,
     },
     largeButton: {
       backgroundColor: '#007bff', // Consistent blue
       borderRadius: 10,
-      paddingVertical: 15,
+      paddingVertical: 10,
       paddingHorizontal: 20,
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 10,
       elevation: 4,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
@@ -700,7 +707,7 @@ const useStyles = (isDark) =>
       gap: 10,
     },
     largeButtonText: {
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: 'bold',
       color: '#fff', // Consistent white
     },
