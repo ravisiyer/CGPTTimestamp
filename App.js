@@ -442,12 +442,11 @@ export default function App() {
                 animationType="slide"
                 transparent={true}
                 visible={isInfoModalVisible}
-                onRequestClose={() => {
-                    setIsInfoModalVisible(!isInfoModalVisible);
-                }}
+                onRequestClose={() => setIsInfoModalVisible(false)}
             >
-                <View style={styles.centeredView}>
-                    <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9', justifyContent: 'space-between' }]}>
+                {/* Pressable for outside tap to close */}
+                <Pressable style={styles.centeredView} onPress={() => setIsInfoModalVisible(false)}>
+                    <Pressable style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9', justifyContent: 'space-between' }]} onPress={(e) => e.stopPropagation()}>
                         {/* Scrollable content */}
                         <ScrollView contentContainerStyle={styles.infoModalContent}>
                             <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>About This App</Text>
@@ -490,8 +489,8 @@ export default function App() {
                         >
                             <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Dismiss</Text>
                         </Pressable>
-                    </View>
-                </View>
+                    </Pressable>
+                </Pressable>
             </Modal>
 
             {/* Timestamp Note Editor Modal */}
@@ -501,8 +500,9 @@ export default function App() {
                 visible={isNoteModalVisible}
                 onRequestClose={() => setIsNoteModalVisible(false)}
             >
-                <View style={styles.centeredView}>
-                    <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
+                {/* Pressable for outside tap to close */}
+                <Pressable style={styles.centeredView} onPress={() => setIsNoteModalVisible(false)}>
+                    <Pressable style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]} onPress={(e) => e.stopPropagation()}>
                         <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>
                             Edit Timestamp Note
                         </Text>
@@ -544,8 +544,8 @@ export default function App() {
                                 <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Cancel</Text>
                             </Pressable>
                         </View>
-                    </View>
-                </View>
+                    </Pressable>
+                </Pressable>
             </Modal>
 
             {/* Settings Modal (Placeholder) */}
@@ -555,8 +555,9 @@ export default function App() {
                 visible={isSettingsModalVisible}
                 onRequestClose={() => setIsSettingsModalVisible(false)}
             >
-                <View style={styles.centeredView}>
-                    <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
+                {/* Pressable for outside tap to close */}
+                <Pressable style={styles.centeredView} onPress={() => setIsSettingsModalVisible(false)}>
+                    <Pressable style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]} onPress={(e) => e.stopPropagation()}>
                         <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>
                             Settings
                         </Text>
@@ -564,8 +565,8 @@ export default function App() {
                             This is where settings options will go.
                         </Text>
                         <Button title="Dismiss" onPress={() => setIsSettingsModalVisible(false)} />
-                    </View>
-                </View>
+                    </Pressable>
+                </Pressable>
             </Modal>
 
         </SafeAreaView>
@@ -655,9 +656,10 @@ const useStyles = (isDark) =>
             opacity: 0.7,
         },
         highlightedItem: {
-            backgroundColor: Platform.OS === 'web' ? 'rgba(0, 123, 255, 0.4)' : 'rgba(0, 123, 255, 0.2)', // A temporary light blue flash
+            // Updated for better visibility in dark mode
+            backgroundColor: isDark ? 'rgba(128, 255, 0, 0.3)' : (Platform.OS === 'web' ? 'rgba(0, 123, 255, 0.4)' : 'rgba(0, 123, 255, 0.2)'),
             borderWidth: 2,
-            borderColor: '#007bff',
+            borderColor: isDark ? '#80FF00' : '#007bff', // Lime green border for dark mode
         },
         itemContentRow: {
             flexDirection: 'row',
