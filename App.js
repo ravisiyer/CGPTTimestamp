@@ -171,23 +171,6 @@ export default function App() {
         }
     };
 
-    // This local formattedTimestamp is replaced by formatDateTime from util.mjs
-    // const formattedTimestamp = (isoString) => {
-    //   const date = new Date(isoString);
-    //   const userLocale = Localization.getLocales()[0].languageTag;
-    //   const dateTimePart = date.toLocaleString(userLocale, {
-    //     year: 'numeric',
-    //     month: 'short',
-    //     day: 'numeric',
-    //     hour: 'numeric',
-    //     minute: 'numeric',
-    //     second: 'numeric',
-    //     hour12: true,
-    //   });
-    //   const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
-    //   return `${dateTimePart} (${milliseconds}ms)`;
-    // };
-
     const exportTimestamps = async () => {
         if (timestamps.length === 0) {
             if (Platform.OS === 'web') {
@@ -205,15 +188,15 @@ export default function App() {
                 const nextEntry = timestamps[i + 1];
                 const nextTimestamp = nextEntry ? new Date(nextEntry.time) : null;
 
-                // For export, always include full detail (milliseconds)
+                // For export, use the current showMilliseconds state
                 const interval = nextTimestamp
-                    ? formatInterval(currentTimestamp - nextTimestamp, true) // Always include milliseconds for export
+                    ? formatInterval(currentTimestamp - nextTimestamp, showMilliseconds) // Use showMilliseconds state
                     : '';
 
                 const safeNote = entry.note ? `"${entry.note.replace(/"/g, '""')}"` : '""';
 
-                // For export, always include full detail (milliseconds) in timestamp
-                return `"${formatDateTime(entry.time, true, userLocale)}","${interval}",${safeNote}`;
+                // For export, use formatDateTime with showMilliseconds state and isExport=true
+                return `"${formatDateTime(entry.time, showMilliseconds, userLocale, true)}","${interval}",${safeNote}`;
             })
             .join('\n');
 
@@ -499,11 +482,6 @@ export default function App() {
                                     More info (blog post)
                                 </Text>
                             </Text>
-                            {/* Added some dummy content to test scrolling, remove later if not needed */}
-                            {/* <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                            </Text> */}
                         </ScrollView>
                         {/* Dismiss Button - always at the bottom */}
                         <Pressable
