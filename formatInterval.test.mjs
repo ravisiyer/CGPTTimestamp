@@ -36,7 +36,7 @@ const testCases = [
     { input: 0, expected: '0s', name: 'Zero milliseconds (no ms)', includeMilliseconds: false },
     { input: 1, expected: '0s', name: 'One millisecond (no ms)', includeMilliseconds: false }, // 1ms rounds to 0s
     { input: 499, expected: '0s', name: '499 milliseconds (no ms)', includeMilliseconds: false }, // Rounds to 0s
-    { input: 500, expected: '0s', name: '500 milliseconds (no ms)', includeMilliseconds: false }, // Rounds to 0s
+    { input: 500, expected: '1s', name: '500 milliseconds (no ms)', includeMilliseconds: false }, // Corrected: Rounds to 1s
     { input: 999, expected: '1s', name: '999 milliseconds (no ms)', includeMilliseconds: false }, // Rounds to 1s
     { input: 1000, expected: '1s', name: 'One second exact (no ms)', includeMilliseconds: false },
     { input: 1001, expected: '1s', name: 'One second one millisecond (no ms)', includeMilliseconds: false },
@@ -68,6 +68,9 @@ const testCases = [
 
 console.log("Starting tests for formatInterval function...\n");
 
+let passedTests = 0;
+let failedTests = 0;
+
 testCases.forEach((test, index) => {
     console.log(`\n--- Test Case ${index + 1}: ${test.name} ---`);
     const actual = formatInterval(test.input, test.includeMilliseconds); // Pass the optional parameter
@@ -78,11 +81,21 @@ testCases.forEach((test, index) => {
 
     if (actual === test.expected) {
         console.log('✅ PASS');
+        passedTests++;
     } else {
         console.error('❌ FAIL');
         console.error(`   Expected: "${test.expected}", Got: "${actual}"`);
+        failedTests++;
     }
     console.log(`--- End Test Case ${index + 1} ---`);
 });
 
 console.log("\nAll tests completed.");
+console.log(`Summary: ${passedTests} passed, ${failedTests} failed.`);
+console.log(`Total tests: ${testCases.length}`);
+
+if (failedTests > 0) {
+    console.error("Some tests failed. Please review the output above.");
+} else {
+    console.log("All tests passed successfully!");
+}
