@@ -75,7 +75,9 @@ export default function App() {
         setTimestamps(prevTimestamps => {
             const updated = [newTimestampEntry, ...prevTimestamps].slice(0, 100);
             saveTimestampsToStorage(updated);
-            console.log(`Timestamp added: ${now}`);
+            if (__DEV__) { // Conditional logging for development
+                console.log(`Timestamp added: ${now}`);
+            }
             setHighlightedTimestampId(newTimestampEntry.id);
 
             if (flatListRef.current) {
@@ -113,7 +115,9 @@ export default function App() {
                     const initialTimestampEntry = { id: generateUniqueId(), time: nowOnLoad, note: '' };
                     const updatedOnLoad = [initialTimestampEntry, ...prevTimestamps].slice(0, 100);
                     saveTimestampsToStorage(updatedOnLoad);
-                    console.log("Initial timestamp added on app launch.");
+                    if (__DEV__) { // Conditional logging for development
+                        console.log("Initial timestamp added on app launch.");
+                    }
                     // Set highlight for the initial timestamp on load
                     setHighlightedTimestampId(initialTimestampEntry.id);
                     return updatedOnLoad;
