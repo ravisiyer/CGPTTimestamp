@@ -449,7 +449,7 @@ export default function App() {
                 <Text style={{ fontWeight: 'bold' }}>Export button:</Text> Exports timestamps data as .csv.
               </Text>
               <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                <Text style={{ fontWeight: 'bold' }}>Clear All button:</Text> Clears all timestamps.
+                <Text style={{ fontWeight: 'bold' }}>Clear (All) button:</Text> Clears all timestamps.
               </Text>
               <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                 <Text style={{ fontWeight: 'bold' }}>Tap/Click on timestamp:</Text> Shows modal to view/edit note.
@@ -458,11 +458,11 @@ export default function App() {
                 <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
               </Text>
               <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                <Text style={{ fontWeight: 'bold' }}>App date:</Text> 14 Jun. 2025
+                <Text style={{ fontWeight: 'bold' }}>App date:</Text> 16 Jun. 2025
               </Text>
               <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                 <Text style={{ color: isDark ? '#87CEEB' : 'blue', textDecorationLine: 'underline' }} onPress={openBlogLink}>
-                  Using ChatGPT and Gemini to write React Native and Expo Timestamp app (web and mobile)
+                  More info (blog post)
                 </Text>
               </Text>
               {/* Added some dummy content to test scrolling, remove later if not needed */}
