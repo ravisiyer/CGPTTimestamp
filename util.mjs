@@ -1,9 +1,9 @@
-// util.js
+// util.mjs
 
 // This constant is evaluated only once when the module loads.
 // Logs will appear if NOT in production AND if ENABLE_FORMAT_INTERVAL_LOGS environment variable is 'true'.
 const TEST_FORMAT_INTERVAL = process.env.NODE_ENV !== 'production' &&
-                              process.env.ENABLE_FORMAT_INTERVAL_LOGS === 'true';
+                             process.env.ENABLE_FORMAT_INTERVAL_LOGS === 'true';
 
 // # To run formatInterval method test driver (formatInterval.test.mjs) with the formatInterval logs ENABLED:
 // $env:ENABLE_FORMAT_INTERVAL_LOGS="true"; node ./formatInterval.test.mjs
@@ -13,65 +13,102 @@ const TEST_FORMAT_INTERVAL = process.env.NODE_ENV !== 'production' &&
  * Console logs are conditional based on TEST_FORMAT_INTERVAL.
  *
  * @param {number} totalMilliseconds - The total duration in milliseconds.
+ * @param {boolean} [includeMilliseconds=true] - Whether to include milliseconds in the output string.
  * @returns {string} The formatted duration string.
  */
-export const formatInterval = (totalMilliseconds) => {
-  // Conditional logging: only log if not in production environment
-  if (TEST_FORMAT_INTERVAL) {
-    console.log(`\n--- formatInterval called with totalMilliseconds: ${totalMilliseconds} ---`);
-  }
-
-  if (totalMilliseconds === null || isNaN(totalMilliseconds)) {
+export const formatInterval = (totalMilliseconds, includeMilliseconds = true) => {
     if (TEST_FORMAT_INTERVAL) {
-      console.log("Input is null or NaN, returning empty string.");
+        console.log(`\n--- formatInterval called with totalMilliseconds: ${totalMilliseconds}, includeMilliseconds: ${includeMilliseconds} ---`);
     }
-    return '';
-  }
 
-  const MS_PER_SECOND = 1000;
-  const MS_PER_MINUTE = 60 * MS_PER_SECOND;
-  const MS_PER_HOUR = 60 * MS_PER_MINUTE;
-  const MS_PER_DAY = 24 * MS_PER_HOUR;
+    if (totalMilliseconds === null || isNaN(totalMilliseconds)) {
+        if (TEST_FORMAT_INTERVAL) {
+            console.log("Input is null or NaN, returning empty string.");
+        }
+        return '';
+    }
 
-  if (TEST_FORMAT_INTERVAL) {
-    console.log(`Constants: MS_PER_SECOND=${MS_PER_SECOND}, MS_PER_MINUTE=${MS_PER_MINUTE}, MS_PER_HOUR=${MS_PER_HOUR}, MS_PER_DAY=${MS_PER_DAY}`);
-  }
+    const MS_PER_SECOND = 1000;
+    const MS_PER_MINUTE = 60 * MS_PER_SECOND;
+    const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+    const MS_PER_DAY = 24 * MS_PER_HOUR;
 
-  const days = Math.floor(totalMilliseconds / MS_PER_DAY);
-  let remainderMs = totalMilliseconds % MS_PER_DAY;
-  if (TEST_FORMAT_INTERVAL) {
-    console.log(`Days: ${days}, Remainder after days: ${remainderMs}ms`);
-  }
+    if (TEST_FORMAT_INTERVAL) {
+        console.log(`Constants: MS_PER_SECOND=${MS_PER_SECOND}, MS_PER_MINUTE=${MS_PER_MINUTE}, MS_PER_HOUR=${MS_PER_HOUR}, MS_PER_DAY=${MS_PER_DAY}`);
+    }
 
-  const hrs = Math.floor(remainderMs / MS_PER_HOUR);
-  remainderMs %= MS_PER_HOUR;
-  if (TEST_FORMAT_INTERVAL) {
-    console.log(`Hours: ${hrs}, Remainder after hours: ${remainderMs}ms`);
-  }
+    let remainingMs = totalMilliseconds;
+    const displayParts = [];
 
-  const mins = Math.floor(remainderMs / MS_PER_MINUTE);
-  remainderMs %= MS_PER_MINUTE;
-  if (TEST_FORMAT_INTERVAL) {
-    console.log(`Minutes: ${mins}, Remainder after minutes: ${remainderMs}ms`);
-  }
+    const days = Math.floor(remainingMs / MS_PER_DAY);
+    remainingMs %= MS_PER_DAY;
+    if (days > 0) displayParts.push(`${days}d`);
 
-  const secs = Math.floor(remainderMs / MS_PER_SECOND);
-  const millisecs = remainderMs % MS_PER_SECOND;
-  if (TEST_FORMAT_INTERVAL) {
-    console.log(`Seconds: ${secs}, Milliseconds: ${millisecs}`);
-  }
+    const hrs = Math.floor(remainingMs / MS_PER_HOUR);
+    remainingMs %= MS_PER_HOUR;
+    if (hrs > 0) displayParts.push(`${hrs}h`);
 
-  let result = '';
-  if (days > 0) result += `${days}d `;
-  if (hrs > 0 || days > 0) result += `${hrs}h `;
-  if (mins > 0 || hrs > 0 || days > 0) result += `${mins}m `;
-  result += `${secs}s `;
-  result += `${millisecs}ms`; // Always add milliseconds
+    const mins = Math.floor(remainingMs / MS_PER_MINUTE);
+    remainingMs %= MS_PER_MINUTE;
+    if (mins > 0) displayParts.push(`${mins}m`);
 
-  const finalResult = result.trim();
-  if (TEST_FORMAT_INTERVAL) {
-    console.log(`Final formatted string: "${finalResult}"`);
-    console.log(`--- End formatInterval ---`);
-  }
-  return finalResult;
+    const secs = Math.floor(remainingMs / MS_PER_SECOND);
+    const millisecs = remainingMs % MS_PER_SECOND;
+
+    if (secs > 0) displayParts.push(`${secs}s`);
+
+    if (includeMilliseconds) {
+        displayParts.push(`${millisecs}ms`);
+    }
+
+    let result;
+    if (displayParts.length === 0) {
+        // This handles cases where totalMilliseconds is 0, or only had milliseconds and includeMilliseconds is false
+        if (totalMilliseconds === 0) {
+            result = includeMilliseconds ? '0s 0ms' : '0s';
+        } else {
+            // This means totalMilliseconds was > 0, but only had milliseconds, and includeMilliseconds is false.
+            result = '0s';
+        }
+    } else {
+        result = displayParts.join(' ');
+    }
+
+    if (TEST_FORMAT_INTERVAL) {
+        console.log(`Final formatted string: "${result}"`);
+        console.log(`--- End formatInterval ---`);
+    }
+    return result;
+};
+
+
+/**
+ * Formats an ISO timestamp string into a human-readable date-time string.
+ *
+ * @param {string} isoString - The ISO timestamp string.
+ * @param {boolean} includeMilliseconds - Whether to include milliseconds.
+ * @param {string} userLocale - The user's locale string (e.g., 'en-US').
+ * @returns {string} The formatted date-time string.
+ */
+export const formatDateTime = (isoString, includeMilliseconds, userLocale) => {
+    const date = new Date(isoString);
+
+    const options = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: true,
+    };
+
+    let dateTimePart = date.toLocaleString(userLocale, options);
+
+    if (includeMilliseconds) {
+        const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+        return `${dateTimePart} (${milliseconds}ms)`;
+    } else {
+        return dateTimePart;
+    }
 };
