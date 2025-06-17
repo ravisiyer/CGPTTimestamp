@@ -22,11 +22,13 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import Constants from 'expo-constants';
 import { formatInterval, formatDateTime } from './util.mjs'; // Added formatDateTime
-import * as Localization from 'expo-localization'; // Corrected import
+import * as Localization from 'expo-localization';
 import Feather from 'react-native-vector-icons/Feather';
 
 const STORAGE_KEY = '@timestamp_list';
-const MILLISECONDS_TOGGLE_STORAGE_KEY = '@show_milliseconds_toggle'; // New storage key
+const MILLISECONDS_TOGGLE_STORAGE_KEY = '@show_milliseconds_toggle';
+const MAX_TIMESTAMPS = 100; 
+// const MAX_TIMESTAMPS = 10; // For testing
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
 // Helper function to generate a highly unique ID
@@ -40,7 +42,7 @@ export default function App() {
     const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
     const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
     const [highlightedTimestampId, setHighlightedTimestampId] = useState(null);
-    const [showMilliseconds, setShowMilliseconds] = useState(true); // New state for milliseconds toggle
+    const [showMilliseconds, setShowMilliseconds] = useState(true);
 
     const [currentNoteText, setCurrentNoteText] = useState('');
     const [editingTimestampIndex, setEditingTimestampIndex] = useState(null);
@@ -50,7 +52,10 @@ export default function App() {
     const appState = useRef(AppState.currentState);
     const highlightTimeoutRef = useRef(null);
     const flatListRef = useRef(null);
-    const userLocale = Localization.getLocales()[0].languageTag; // Get user locale once
+    const userLocale = Localization.getLocales()[0].languageTag;
+
+    // useRef to ensure loadData runs only once on initial mount
+    const hasLoadedInitialData = useRef(false);
 
     const saveTimestampsToStorage = useCallback(async (data) => {
         try {
@@ -68,14 +73,54 @@ export default function App() {
         }
     }, []);
 
+    const showAppAlert = useCallback(async (title, message) => {
+        return new Promise((resolve) => {
+            if (Platform.OS === 'web') {
+                alert(message); // window.alert for web
+                resolve(true);
+            } else {
+                Alert.alert(
+                    title,
+                    message,
+                    [{ text: "OK", onPress: () => resolve(true) }],
+                    { cancelable: false }
+                );
+            }
+        });
+    }, []);
+
+
     const addTimestamp = async () => {
+        const currentLength = timestamps.length;
         const now = new Date().toISOString();
         const newTimestampEntry = { id: generateUniqueId(), time: now, note: '' };
 
+        // --- Start of new logic for MAX_TIMESTAMPS handling for user-initiated adds ---
+        if (currentLength >= MAX_TIMESTAMPS) {
+            await showAppAlert(
+                "Timestamp Data Full",
+                `Timestamp data is full. Maximum entries allowed: ${MAX_TIMESTAMPS}. ` +
+                "The current timestamp cannot be added. Please delete some entries or clear all " +
+                "timestamps to add more."
+            );
+            return; // Exit function if limit is reached
+        } else if (currentLength === MAX_TIMESTAMPS - 1) {
+            // This is the last slot before hitting MAX_TIMESTAMPS
+            await showAppAlert(
+                "Timestamp Limit Warning",
+                `You are about to reach the limit of ${MAX_TIMESTAMPS} timestamps. ` +
+                "The current timestamp will be added, but **further additions will not be made**. " + // Updated wording
+                "Please delete some entries or clear all timestamps if you wish to add more."
+            );
+        }
+        // --- End of new logic for MAX_TIMESTAMPS handling ---
+
+        // Proceed to add the timestamp ONLY if not already at MAX_TIMESTAMPS
         setTimestamps(prevTimestamps => {
-            const updated = [newTimestampEntry, ...prevTimestamps].slice(0, 100);
-            saveTimestampsToStorage(updated);
-            if (__DEV__) { // Conditional logging for development
+            // Add the new timestamp to the beginning. No slicing here, as the check above now strictly prevents overgrowth.
+            const updated = [newTimestampEntry, ...prevTimestamps];
+            saveTimestampsToStorage(updated); // Save the exact updated array
+            if (__DEV__) {
                 console.log(`Timestamp added: ${now}`);
             }
             setHighlightedTimestampId(newTimestampEntry.id);
@@ -88,20 +133,16 @@ export default function App() {
     };
 
     useEffect(() => {
+        // Only run this effect once on component mount
+        if (hasLoadedInitialData.current) {
+            return; // Skip if already loaded
+        }
+        hasLoadedInitialData.current = true; // Mark as loaded
+
         const loadData = async () => {
             try {
-                // Load timestamps
                 const stored = await AsyncStorage.getItem(STORAGE_KEY);
-                let parsed = stored ? JSON.parse(stored) : [];
-
-                parsed = parsed.map(item => {
-                    if (typeof item === 'string') {
-                        return { id: generateUniqueId(), time: item, note: '' };
-                    }
-                    return { id: item.id || generateUniqueId(), time: item.time, note: item.note || '' };
-                }).filter(item => item && item.time);
-
-                setTimestamps(parsed);
+                let loadedParsedTimestamps = stored ? JSON.parse(stored) : [];
 
                 // Load milliseconds toggle state
                 const storedMillisecondsToggle = await AsyncStorage.getItem(MILLISECONDS_TOGGLE_STORAGE_KEY);
@@ -109,19 +150,52 @@ export default function App() {
                     setShowMilliseconds(JSON.parse(storedMillisecondsToggle));
                 }
 
-                // Add initial timestamp on app launch
-                setTimestamps(prevTimestamps => {
+                let finalTimestampsToSet = [];
+                let alertMessage = null;
+                let alertTitle = null;
+
+                // Scenario 1: List is already full on launch (or more than MAX_TIMESTAMPS from old data, truncate silently)
+                if (loadedParsedTimestamps.length >= MAX_TIMESTAMPS) {
+                    finalTimestampsToSet = loadedParsedTimestamps.slice(0, MAX_TIMESTAMPS); // Truncate if somehow more were stored
+                    alertTitle = "Timestamp Data Full on Launch";
+                    alertMessage = `Timestamp data was full (${MAX_TIMESTAMPS} entries) when the app launched. ` +
+                                   "No new timestamp was added automatically. Please delete some entries or clear all " +
+                                   "timestamps if you wish to add more." ;
+                    if (__DEV__) {
+                        console.log("Timestamp list already full on app launch, no initial timestamp added.");
+                    }
+                }
+                // Scenario 2: List not full, will add initial timestamp
+                else {
                     const nowOnLoad = new Date().toISOString();
                     const initialTimestampEntry = { id: generateUniqueId(), time: nowOnLoad, note: '' };
-                    const updatedOnLoad = [initialTimestampEntry, ...prevTimestamps].slice(0, 100);
-                    saveTimestampsToStorage(updatedOnLoad);
-                    if (__DEV__) { // Conditional logging for development
+                    finalTimestampsToSet = [initialTimestampEntry, ...loadedParsedTimestamps]; // Add, don't slice yet for this case
+
+                    if (__DEV__) {
                         console.log("Initial timestamp added on app launch.");
                     }
-                    // Set highlight for the initial timestamp on load
                     setHighlightedTimestampId(initialTimestampEntry.id);
-                    return updatedOnLoad;
-                });
+
+
+                    // Check if adding this timestamp caused the list to become full
+                    if (finalTimestampsToSet.length === MAX_TIMESTAMPS) {
+                        alertTitle = "Timestamp List Now Full";
+                        alertMessage = `The timestamp list is now full with ${MAX_TIMESTAMPS} entries due to the initial timestamp added on launch. ` +
+                                       "**Further additions will not be made**. Please delete some entries or clear all timestamps if you wish to add more." ; // Updated wording
+                    }
+                }
+
+                // IMPORTANT: Save to storage *before* setting state, especially if an alert is about to show.
+                // This ensures the saved state reflects the UI state correctly.
+                await saveTimestampsToStorage(finalTimestampsToSet);
+                setTimestamps(finalTimestampsToSet); // Update state once after all calculations
+
+                if (alertMessage) {
+                    // Use a short timeout to ensure the alert appears after initial render is complete
+                    setTimeout(() => {
+                        showAppAlert(alertTitle, alertMessage);
+                    }, 100);
+                }
 
             } catch (error) {
                 console.error("Error loading app state:", error);
@@ -134,7 +208,7 @@ export default function App() {
         return () => {
             // Cleanup functions if any listeners were added
         };
-    }, [saveTimestampsToStorage, saveMillisecondsToggle]); // Added saveMillisecondsToggle to dependencies
+    }, [saveTimestampsToStorage, saveMillisecondsToggle, showAppAlert]);
 
     useEffect(() => {
         if (highlightedTimestampId) {
@@ -194,7 +268,7 @@ export default function App() {
 
                 // For export, use the current showMilliseconds state
                 const interval = nextTimestamp
-                    ? formatInterval(currentTimestamp - nextTimestamp, showMilliseconds) // Use showMilliseconds state
+                    ? formatInterval(currentTimestamp - nextTimestamp, showMilliseconds)
                     : '';
 
                 const safeNote = entry.note ? `"${entry.note.replace(/"/g, '""')}"` : '""';
@@ -413,7 +487,7 @@ export default function App() {
                         </View>
                     </Pressable>
 
-                    {/* Settings Button - COMMENTED OUT as per user request */}
+                    {/* Settings Modal (Placeholder) */}
                     {/*
                     <Pressable onPress={openSettingsModal} style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
                         <View style={styles.iconButtonContent}>
@@ -447,8 +521,7 @@ export default function App() {
                 transparent={true}
                 visible={isInfoModalVisible}
                 onRequestClose={() => {
-                    // This handles closing on back button press (Android) or programmatically
-                    setIsInfoModalVisible(false);
+                    setIsInfoModalVisible(!isInfoModalVisible);
                 }}
             >
                 <View style={styles.centeredView}>
@@ -459,6 +532,9 @@ export default function App() {
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 This is a launch and one-touch-add timestamp recorder app with facility to add a note
                                 to any timestamp entry. It automatically creates a timestamp when the app is launched.
+                            </Text>
+                            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                                <Text style={{ fontWeight: 'bold' }}>Maximum timestamps: </Text> {MAX_TIMESTAMPS}
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>Add (Timestamp) buttons:</Text> Adds timestamp
@@ -480,7 +556,7 @@ export default function App() {
                                 <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                                <Text style={{ fontWeight: 'bold' }}>App date:</Text> 17 Jun. 2025
+                                <Text style={{ fontWeight: 'bold' }}>App date:</Text> 18 Jun. 2025
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ color: isDark ? '#87CEEB' : 'blue', textDecorationLine: 'underline' }} onPress={openBlogLink}>

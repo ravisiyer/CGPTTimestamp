@@ -1,6 +1,6 @@
 {
   "name": "timestamptrackerweb",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "homepage": "https://ravisiyer.github.io/CGPTTimestamp",
   "main": "index.js",
   "scripts": {
