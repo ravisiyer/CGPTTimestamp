@@ -590,7 +590,7 @@ export default function App() {
                                 <Text style={{ fontWeight: 'bold' }}>MS Toggle button:</Text> Toggles display of milliseconds in the main list.
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                                <Text style={{ fontWeight: 'bold' }}>Clear (All) button:</Text> Clears all timestamps.
+                                <Text style={{ fontWeight: 'bold' }}>Clear button:</Text> Clears timestamps.
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>Tap/Click on timestamp:</Text> Shows modal to view/edit note (always displays milliseconds).
