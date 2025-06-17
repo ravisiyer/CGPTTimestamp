@@ -510,8 +510,16 @@ export default function App() {
                         </View>
                     </Pressable>
 
-                    <Pressable onPress={handleClearTimestampsPrompt} style={({ pressed }) =>
-                        [styles.iconButton, { backgroundColor: 'rgb(44, 4, 4)' }, pressed && styles.iconButtonPressed]}>
+                    <Pressable
+                        onPress={handleClearTimestampsPrompt}
+                        disabled={timestamps.length === 0} // Disable if no timestamps
+                        style={({ pressed }) => [
+                            styles.iconButton,
+                            { backgroundColor: 'rgb(44, 4, 4)' },
+                            (pressed || timestamps.length === 0) && styles.iconButtonPressed,
+                            timestamps.length === 0 && { opacity: 0.5 } // Dim if disabled
+                        ]}
+                    >
                         <View style={[styles.iconButtonContent, { backgroundColor: 'rgb(44, 4, 4)' }]}>
                             <Feather name="trash-2" size={18} color={'red'} />
                             <Text style={[styles.iconButtonText, { color: 'red' }]}>Clear</Text>
@@ -587,7 +595,6 @@ export default function App() {
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>Tap/Click on timestamp:</Text> Shows modal to view/edit note (always displays milliseconds).
                             </Text>
-                            {/* THIS LINE WAS MISSING */}
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>Maximum timestamps: </Text> {MAX_TIMESTAMPS}
                             </Text>
@@ -679,16 +686,16 @@ export default function App() {
                     <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
                         <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>Clear Timestamps</Text>
 
-                        <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 15 }]}>
-                            Current entries: <Text style={{ fontWeight: 'bold' }}>{timestamps.length}</Text>
+                        <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 5, alignSelf: 'flex-start' }]}>
+                            Current timestamps: <Text style={{ fontWeight: 'bold' }}>{timestamps.length}</Text>
+                        </Text>
+                        <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 15, alignSelf: 'flex-start' }]}>
+                            Maximum timestamps: <Text style={{ fontWeight: 'bold' }}>{MAX_TIMESTAMPS}</Text>
                         </Text>
 
                         <View style={styles.clearOptionRow}>
                             <Pressable
-                                style={[
-                                    styles.clearRadioButton,
-                                    clearActionType === 'deleteN' && styles.clearRadioButtonSelected
-                                ]}
+                                style={[styles.clearRadioButtonContainer]} // Container for icon and text
                                 onPress={() => {
                                     setClearActionType('deleteN');
                                     // Set numToDelete to default if user just selected this option and it's currently 0
@@ -697,6 +704,12 @@ export default function App() {
                                     }
                                 }}
                             >
+                                <Feather
+                                    name={clearActionType === 'deleteN' ? "check-circle" : "circle"}
+                                    size={20}
+                                    color={clearActionType === 'deleteN' ? '#007bff' : (isDark ? '#ccc' : '#555')}
+                                    style={styles.radioIcon}
+                                />
                                 <Text style={[
                                     styles.clearRadioButtonText,
                                     clearActionType === 'deleteN' ? styles.clearRadioButtonTextSelected : { color: isDark ? '#ddd' : '#333' }
@@ -725,22 +738,25 @@ export default function App() {
                                 editable={clearActionType === 'deleteN'}
                                 selectTextOnFocus={clearActionType === 'deleteN'}
                             />
-                            <Text style={[styles.clearRadioButtonText, { color: isDark ? '#ddd' : '#333' }]}>entries</Text>
+                            <Text style={[styles.clearRadioButtonText, { color: isDark ? '#ddd' : '#333' }]}>timestamps</Text>
                         </View>
 
                         <View style={[styles.clearOptionRow, { marginTop: 15 }]}>
                             <Pressable
-                                style={[
-                                    styles.clearRadioButton,
-                                    clearActionType === 'clearAll' && styles.clearRadioButtonSelected
-                                ]}
+                                style={[styles.clearRadioButtonContainer]} // Container for icon and text
                                 onPress={() => setClearActionType('clearAll')}
                             >
+                                <Feather
+                                    name={clearActionType === 'clearAll' ? "check-circle" : "circle"}
+                                    size={20}
+                                    color={clearActionType === 'clearAll' ? '#007bff' : (isDark ? '#ccc' : '#555')}
+                                    style={styles.radioIcon}
+                                />
                                 <Text style={[
                                     styles.clearRadioButtonText,
                                     clearActionType === 'clearAll' ? styles.clearRadioButtonTextSelected : { color: isDark ? '#ddd' : '#333' }
                                 ]}>
-                                    Clear all entries
+                                    Clear all timestamps
                                 </Text>
                             </Pressable>
                         </View>
@@ -1032,25 +1048,28 @@ const useStyles = (isDark) =>
             marginBottom: 10,
             flexWrap: 'wrap', // Allow wrapping on small screens
         },
-        clearRadioButton: {
+        clearRadioButtonContainer: { // New container for radio button icon + text
             flexDirection: 'row',
             alignItems: 'center',
             paddingVertical: 8,
             paddingHorizontal: 10,
             borderRadius: 5,
-            borderWidth: 1,
-            borderColor: isDark ? '#666' : '#ccc',
+            // borderWidth: 1, // Removed border from here to just surround the whole row if needed
+            // borderColor: isDark ? '#666' : '#ccc',
             marginRight: 10,
         },
-        clearRadioButtonSelected: {
-            backgroundColor: '#007bff',
-            borderColor: '#007bff',
+        radioIcon: {
+            marginRight: 8, // Space between icon and text
         },
+        // clearRadioButtonSelected: { // No longer needed, handled by icon color
+        //     backgroundColor: '#007bff',
+        //     borderColor: '#007bff',
+        // },
         clearRadioButtonText: {
             fontSize: 16,
         },
         clearRadioButtonTextSelected: {
-            color: '#fff',
+            // color: '#fff', // Removed, as icon color indicates selection now
             fontWeight: 'bold',
         },
         clearNumberInput: {
