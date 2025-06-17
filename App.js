@@ -27,8 +27,7 @@ import Feather from 'react-native-vector-icons/Feather';
 
 const STORAGE_KEY = '@timestamp_list';
 const MILLISECONDS_TOGGLE_STORAGE_KEY = '@show_milliseconds_toggle';
-const MAX_TIMESTAMPS = 100; 
-// const MAX_TIMESTAMPS = 10; // For testing
+const MAX_TIMESTAMPS = 100; // New constant for maximum timestamps
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
 // Helper function to generate a highly unique ID
@@ -41,6 +40,10 @@ export default function App() {
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
     const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
     const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
+    const [isClearOptionsModalVisible, setIsClearOptionsModalVisible] = useState(false); // New state for clear options modal
+    const [clearActionType, setClearActionType] = useState('deleteN'); // 'deleteN' or 'clearAll'
+    const [numToDelete, setNumToDelete] = useState(0); // Number of entries to delete from end
+
     const [highlightedTimestampId, setHighlightedTimestampId] = useState(null);
     const [showMilliseconds, setShowMilliseconds] = useState(true);
 
@@ -228,26 +231,61 @@ export default function App() {
         };
     }, [highlightedTimestampId]);
 
-    const clearTimestamps = async () => {
+    const handleClearTimestampsPrompt = () => {
+        // Calculate default numToDelete: half of current timestamps, clamped between 1 and total (if timestamps exist)
+        const defaultDeleteCount = timestamps.length > 0
+            ? Math.max(1, Math.floor(timestamps.length / 2))
+            : 0; // If no timestamps, default to 0 to prevent errors
+        setNumToDelete(defaultDeleteCount);
+        setClearActionType('deleteN'); // Default to deleting N entries
+        setIsClearOptionsModalVisible(true);
+    };
+
+    const handleClearConfirmed = async () => {
+        let confirmMessage = "";
+        let newTimestamps = [];
+
+        if (clearActionType === 'clearAll') {
+            confirmMessage = "Are you sure you want to clear ALL timestamps? This action cannot be undone.";
+            newTimestamps = [];
+        } else { // 'deleteN'
+            const actualNumToDelete = Math.min(Math.max(0, parseInt(numToDelete || '0')), timestamps.length); // Ensure valid number
+            if (actualNumToDelete === 0) {
+                 await showAppAlert("No Timestamps to Delete", "Please enter a number greater than 0, or choose 'Clear All'.");
+                 return; // Do not proceed with deletion
+            }
+            confirmMessage = `Are you sure you want to delete the last ${actualNumToDelete} timestamp entr${actualNumToDelete === 1 ? 'y' : 'ies'}? This action cannot be undone.`;
+            newTimestamps = timestamps.slice(0, timestamps.length - actualNumToDelete);
+        }
+
+        // Use Alert for confirmation as per previous discussions
         if (Platform.OS === 'web') {
-            const confirm = window.confirm('Clear all timestamps?');
-            if (confirm) {
-                await AsyncStorage.removeItem(STORAGE_KEY);
-                setTimestamps([]);
+            if (window.confirm(confirmMessage)) {
+                setTimestamps(newTimestamps);
+                await saveTimestampsToStorage(newTimestamps);
+                setIsClearOptionsModalVisible(false);
             }
         } else {
-            Alert.alert('Confirm', 'Clear all timestamps?', [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'OK',
-                    onPress: async () => {
-                        await AsyncStorage.removeItem(STORAGE_KEY);
-                        setTimestamps([]);
+            Alert.alert(
+                "Confirm Deletion",
+                confirmMessage,
+                [
+                    { text: "Cancel", style: "cancel", onPress: () => { /* User cancelled */ } },
+                    {
+                        text: "Confirm",
+                        onPress: async () => {
+                            setTimestamps(newTimestamps);
+                            await saveTimestampsToStorage(newTimestamps);
+                            setIsClearOptionsModalVisible(false);
+                        },
+                        style: "destructive",
                     },
-                },
-            ]);
+                ],
+                { cancelable: true }
+            );
         }
     };
+
 
     const exportTimestamps = async () => {
         if (timestamps.length === 0) {
@@ -472,7 +510,7 @@ export default function App() {
                         </View>
                     </Pressable>
 
-                    <Pressable onPress={clearTimestamps} style={({ pressed }) =>
+                    <Pressable onPress={handleClearTimestampsPrompt} style={({ pressed }) =>
                         [styles.iconButton, { backgroundColor: 'rgb(44, 4, 4)' }, pressed && styles.iconButtonPressed]}>
                         <View style={[styles.iconButtonContent, { backgroundColor: 'rgb(44, 4, 4)' }]}>
                             <Feather name="trash-2" size={18} color={'red'} />
@@ -534,9 +572,6 @@ export default function App() {
                                 to any timestamp entry. It automatically creates a timestamp when the app is launched.
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                                <Text style={{ fontWeight: 'bold' }}>Maximum timestamps: </Text> {MAX_TIMESTAMPS}
-                            </Text>
-                            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>Add (Timestamp) buttons:</Text> Adds timestamp
                                 and shows the interval from last timestamp.
                             </Text>
@@ -551,6 +586,10 @@ export default function App() {
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>Tap/Click on timestamp:</Text> Shows modal to view/edit note (always displays milliseconds).
+                            </Text>
+                            {/* THIS LINE WAS MISSING */}
+                            <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                                <Text style={{ fontWeight: 'bold' }}>Maximum timestamps: </Text> {MAX_TIMESTAMPS}
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
@@ -622,6 +661,105 @@ export default function App() {
                                 <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Save Note</Text>
                             </Pressable>
                             <Pressable onPress={() => setIsNoteModalVisible(false)} style={({ pressed }) => [styles.modalButton, pressed && styles.modalButtonPressed, { backgroundColor: 'grey', flex: 1 }]}>
+                                <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Cancel</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Clear Options Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={isClearOptionsModalVisible}
+                onRequestClose={() => setIsClearOptionsModalVisible(false)}
+            >
+                <View style={styles.centeredView}>
+                    <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
+                        <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>Clear Timestamps</Text>
+
+                        <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333', marginBottom: 15 }]}>
+                            Current entries: <Text style={{ fontWeight: 'bold' }}>{timestamps.length}</Text>
+                        </Text>
+
+                        <View style={styles.clearOptionRow}>
+                            <Pressable
+                                style={[
+                                    styles.clearRadioButton,
+                                    clearActionType === 'deleteN' && styles.clearRadioButtonSelected
+                                ]}
+                                onPress={() => {
+                                    setClearActionType('deleteN');
+                                    // Set numToDelete to default if user just selected this option and it's currently 0
+                                    if (numToDelete === 0 && timestamps.length > 0) {
+                                        setNumToDelete(Math.max(1, Math.floor(timestamps.length / 2)));
+                                    }
+                                }}
+                            >
+                                <Text style={[
+                                    styles.clearRadioButtonText,
+                                    clearActionType === 'deleteN' ? styles.clearRadioButtonTextSelected : { color: isDark ? '#ddd' : '#333' }
+                                ]}>
+                                    Delete last
+                                </Text>
+                            </Pressable>
+                            <TextInput
+                                style={[
+                                    styles.clearNumberInput,
+                                    {
+                                        backgroundColor: isDark ? '#444' : '#fff',
+                                        color: isDark ? '#eee' : '#000',
+                                        borderColor: isDark ? '#666' : '#ccc',
+                                    },
+                                    clearActionType !== 'deleteN' && { opacity: 0.5 } // Dim if not selected
+                                ]}
+                                keyboardType="numeric"
+                                onChangeText={(text) => {
+                                    let val = parseInt(text, 10);
+                                    if (isNaN(val) || val < 0) val = 0;
+                                    val = Math.min(val, timestamps.length); // Clamp to max timestamps
+                                    setNumToDelete(val);
+                                }}
+                                value={String(numToDelete)}
+                                editable={clearActionType === 'deleteN'}
+                                selectTextOnFocus={clearActionType === 'deleteN'}
+                            />
+                            <Text style={[styles.clearRadioButtonText, { color: isDark ? '#ddd' : '#333' }]}>entries</Text>
+                        </View>
+
+                        <View style={[styles.clearOptionRow, { marginTop: 15 }]}>
+                            <Pressable
+                                style={[
+                                    styles.clearRadioButton,
+                                    clearActionType === 'clearAll' && styles.clearRadioButtonSelected
+                                ]}
+                                onPress={() => setClearActionType('clearAll')}
+                            >
+                                <Text style={[
+                                    styles.clearRadioButtonText,
+                                    clearActionType === 'clearAll' ? styles.clearRadioButtonTextSelected : { color: isDark ? '#ddd' : '#333' }
+                                ]}>
+                                    Clear all entries
+                                </Text>
+                            </Pressable>
+                        </View>
+
+                        <View style={styles.modalButtonRow}>
+                            <Pressable
+                                onPress={handleClearConfirmed}
+                                style={({ pressed }) => [
+                                    styles.modalButton,
+                                    { backgroundColor: 'rgb(180, 0, 0)' }, // Red color for clear action
+                                    pressed && styles.modalButtonPressed
+                                ]}
+                            >
+                                <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Clear</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setIsClearOptionsModalVisible(false)}
+                                style={({ pressed }) => [styles.modalButton, pressed && styles.modalButtonPressed, { backgroundColor: 'grey' }]}
+                            >
                                 <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Cancel</Text>
                             </Pressable>
                         </View>
@@ -884,5 +1022,44 @@ const useStyles = (isDark) =>
         infoDismissButton: {
             width: '100%', // Take full width
             marginTop: 20,
+        },
+        // New styles for Clear Options Modal
+        clearOptionRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            width: '100%',
+            marginBottom: 10,
+            flexWrap: 'wrap', // Allow wrapping on small screens
+        },
+        clearRadioButton: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: 8,
+            paddingHorizontal: 10,
+            borderRadius: 5,
+            borderWidth: 1,
+            borderColor: isDark ? '#666' : '#ccc',
+            marginRight: 10,
+        },
+        clearRadioButtonSelected: {
+            backgroundColor: '#007bff',
+            borderColor: '#007bff',
+        },
+        clearRadioButtonText: {
+            fontSize: 16,
+        },
+        clearRadioButtonTextSelected: {
+            color: '#fff',
+            fontWeight: 'bold',
+        },
+        clearNumberInput: {
+            borderWidth: 1,
+            borderRadius: 5,
+            padding: 8,
+            width: 70, // Fixed width for number input
+            textAlign: 'center',
+            fontSize: 16,
+            marginRight: 10,
         },
     });
