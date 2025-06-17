@@ -22,7 +22,7 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import Constants from 'expo-constants';
 import { formatInterval, formatDateTime } from './util.mjs'; // Added formatDateTime
-import * as Localization from 'expo-localization';
+import * as Localization from 'expo-localization'; // Corrected import
 import Feather from 'react-native-vector-icons/Feather';
 
 const STORAGE_KEY = '@timestamp_list';
@@ -446,11 +446,13 @@ export default function App() {
                 animationType="slide"
                 transparent={true}
                 visible={isInfoModalVisible}
-                onRequestClose={() => setIsInfoModalVisible(false)}
+                onRequestClose={() => {
+                    // This handles closing on back button press (Android) or programmatically
+                    setIsInfoModalVisible(false);
+                }}
             >
-                {/* Pressable for outside tap to close */}
-                <Pressable style={styles.centeredView} onPress={() => setIsInfoModalVisible(false)}>
-                    <Pressable style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9', justifyContent: 'space-between' }]} onPress={(e) => e.stopPropagation()}>
+                <View style={styles.centeredView}>
+                    <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9', justifyContent: 'space-between' }]}>
                         {/* Scrollable content */}
                         <ScrollView contentContainerStyle={styles.infoModalContent}>
                             <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>About This App</Text>
@@ -478,7 +480,7 @@ export default function App() {
                                 <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                                <Text style={{ fontWeight: 'bold' }}>App date:</Text> 16 Jun. 2025
+                                <Text style={{ fontWeight: 'bold' }}>App date:</Text> 17 Jun. 2025
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ color: isDark ? '#87CEEB' : 'blue', textDecorationLine: 'underline' }} onPress={openBlogLink}>
@@ -493,8 +495,8 @@ export default function App() {
                         >
                             <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Dismiss</Text>
                         </Pressable>
-                    </Pressable>
-                </Pressable>
+                    </View>
+                </View>
             </Modal>
 
             {/* Timestamp Note Editor Modal */}
@@ -504,9 +506,8 @@ export default function App() {
                 visible={isNoteModalVisible}
                 onRequestClose={() => setIsNoteModalVisible(false)}
             >
-                {/* Pressable for outside tap to close */}
-                <Pressable style={styles.centeredView} onPress={() => setIsNoteModalVisible(false)}>
-                    <Pressable style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]} onPress={(e) => e.stopPropagation()}>
+                <View style={styles.centeredView}>
+                    <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
                         <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>
                             Edit Timestamp Note
                         </Text>
@@ -548,8 +549,8 @@ export default function App() {
                                 <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Cancel</Text>
                             </Pressable>
                         </View>
-                    </Pressable>
-                </Pressable>
+                    </View>
+                </View>
             </Modal>
 
             {/* Settings Modal (Placeholder) */}
@@ -559,9 +560,8 @@ export default function App() {
                 visible={isSettingsModalVisible}
                 onRequestClose={() => setIsSettingsModalVisible(false)}
             >
-                {/* Pressable for outside tap to close */}
-                <Pressable style={styles.centeredView} onPress={() => setIsSettingsModalVisible(false)}>
-                    <Pressable style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]} onPress={(e) => e.stopPropagation()}>
+                <View style={styles.centeredView}>
+                    <View style={[styles.modalView, { backgroundColor: isDark ? '#333' : '#f9f9f9' }]}>
                         <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>
                             Settings
                         </Text>
@@ -569,8 +569,8 @@ export default function App() {
                             This is where settings options will go.
                         </Text>
                         <Button title="Dismiss" onPress={() => setIsSettingsModalVisible(false)} />
-                    </Pressable>
-                </Pressable>
+                    </View>
+                </View>
             </Modal>
 
         </SafeAreaView>
