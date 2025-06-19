@@ -29,6 +29,7 @@ const STORAGE_KEY = '@timestamp_list';
 const MILLISECONDS_TOGGLE_STORAGE_KEY = '@show_milliseconds_toggle';
 const MAX_TIMESTAMPS = 100; // New constant for maximum timestamps
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
+const MAX_NOTE_LENGTH = 500; // New constant for maximum note length
 
 // Helper function to generate a highly unique ID
 const generateUniqueId = () => {
@@ -598,6 +599,9 @@ export default function App() {
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>Maximum timestamps: </Text> {MAX_TIMESTAMPS}
                             </Text>
+                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
+                                <Text style={{ fontWeight: 'bold' }}>Maximum note length: </Text> {MAX_NOTE_LENGTH} characters.
+                            </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
                             </Text>
@@ -662,7 +666,11 @@ export default function App() {
                             numberOfLines={6}
                             value={currentNoteText}
                             onChangeText={setCurrentNoteText}
+                            maxLength={MAX_NOTE_LENGTH} // Set maximum length
                         />
+                        <Text style={[styles.characterCountText, { color: isDark ? '#ccc' : '#666' }]}>
+                            {currentNoteText.length}/{MAX_NOTE_LENGTH}
+                        </Text>
                         <View style={styles.modalButtonRow}>
                             <Pressable onPress={saveNote} style={({ pressed }) => [styles.modalButton, pressed && styles.modalButtonPressed, { flex: 1 }]}>
                                 <Text style={[styles.modalButtonText, { color: '#fff', textAlign: 'center' }]}>Save Note</Text>
@@ -1027,8 +1035,14 @@ const useStyles = (isDark) =>
             borderWidth: 1,
             borderRadius: 8,
             padding: 10,
-            marginBottom: 20,
+            marginBottom: 5, // Reduced margin to make space for character count
             textAlignVertical: 'top',
+        },
+        characterCountText: {
+            fontSize: 12,
+            alignSelf: 'flex-end', // Align to the right of the input
+            marginRight: 5,
+            marginBottom: 15, // Space between count and buttons
         },
         infoModalContent: {
             paddingBottom: 20,
@@ -1061,7 +1075,7 @@ const useStyles = (isDark) =>
         radioIcon: {
             marginRight: 8, // Space between icon and text
         },
-        // clearRadioButtonSelected: { // No longer needed, handled by icon color
+        // clearRadioButtonSelected: // No longer needed, handled by icon color
         //     backgroundColor: '#007bff',
         //     borderColor: '#007bff',
         // },
