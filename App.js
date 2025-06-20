@@ -606,7 +606,7 @@ export default function App() {
                                 <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                                <Text style={{ fontWeight: 'bold' }}>App date:</Text> 18 Jun. 2025
+                                <Text style={{ fontWeight: 'bold' }}>App date:</Text> 20 Jun. 2025
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ color: isDark ? '#87CEEB' : 'blue', textDecorationLine: 'underline' }} onPress={openBlogLink}>

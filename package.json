@@ -1,6 +1,6 @@
 {
   "name": "timestamptrackerweb",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "homepage": "https://ravisiyer.github.io/CGPTTimestamp",
   "main": "index.js",
   "scripts": {
@@ -14,15 +14,15 @@
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
     "@react-native-async-storage/async-storage": "2.1.2",
-    "expo": "53.0.11",
+    "expo": "53.0.12",
     "expo-file-system": "~18.1.10",
     "expo-localization": "~16.1.5",
     "expo-sharing": "~13.1.5",
     "expo-status-bar": "~2.2.3",
-    "expo-system-ui": "~5.0.8",
+    "expo-system-ui": "~5.0.9",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-native": "0.79.3",
+    "react-native": "0.79.4",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "^0.20.0"
   },
@@ -31,11 +31,11 @@
     "gh-pages": "^6.3.0"
   },
   "private": true,
-  "expo": { 
+  "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {
         "listUnknownPackages": false
       }
     }
-  }  
+  }
 }
