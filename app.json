@@ -27,7 +27,7 @@
       "versionCode": 4
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/time-stamp-icon-wb.png"
     },
     "plugins": [
       "expo-localization"
