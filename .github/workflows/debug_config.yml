@@ -1,0 +1,100 @@
+name: Debug Android Build Config Setup
+
+on:
+  push:
+    branches:
+      - main # Trigger on pushes to your main branch (or a dedicated debug branch)
+  workflow_dispatch: # Allows manual triggering from the GitHub Actions UI
+
+jobs:
+  debug_config:
+    runs-on: ubuntu-latest # GitHub-hosted runner with Ubuntu (Linux environment)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show Current Working Directory
+        run: pwd
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Consistent with your EAS builds
+          cache: 'npm' # Or 'yarn' if you use yarn
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install JavaScript dependencies
+        run: npm install
+
+      - name: Setup Expo CLI
+        run: npm install -g expo-cli
+
+      - name: Create Keystore file
+        env:
+          # Ensure this secret name matches exactly what you created on GitHub
+          MYAPP_UPLOAD_KEYSTORE_BASE64: ${{ secrets.MYAPP_UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p android/app # Ensure the directory exists
+          echo "$MYAPP_UPLOAD_KEYSTORE_BASE64" | base64 --decode > android/app/my-release-key.keystore
+
+      - name: Debug - Verify Keystore File Creation
+        run: |
+          echo "--- Listing contents of android/app/ ---"
+          ls -l android/app/
+          echo "--- Checking size of my-release-key.keystore ---"
+          du -h android/app/my-release-key.keystore # Should show a size > 0
+
+      - name: Create gradle.properties
+        run: |
+          mkdir -p android/app # Ensure the directory exists for the app module
+          echo "MYAPP_UPLOAD_STORE_FILE=my-release-key.keystore" > android/app/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}" >> android/app/gradle.properties
+          echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}" >> android/app/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}" >> android/app/gradle.properties
+
+      # - name: Debug - Verify gradle.properties Content CAUTION Contains secrets
+      - name: Debug - Verify gradle.properties Content (CAUTION Contains secrets)
+        run: |
+          echo "--- Contents of android/app/gradle.properties ---"
+          cat android/app/gradle.properties
+          echo "-------------------------------------------------"
+
+      - name: Generate Android project files (expo prebuild)
+        run: npx expo prebuild --clean --platform android --non-interactive
+
+      - name: Debug - Verify android/app after prebuild
+        run: |
+          echo "--- Listing contents of android/app/ after prebuild ---"
+          ls -l android/app/
+          echo "--- First few lines of android/app/build.gradle after prebuild ---"
+          head -n 20 android/app/build.gradle # Show initial part of build.gradle
+          echo "------------------------------------------------------------------"
+
+
+      - name: Run Node.js script to modify build.gradle
+        run: node scripts/Step6Fix.js # Assumes script is at scripts/Step6Fix.js in your repo root
+
+      - name: Debug - Display Modified build.gradle Content (CAUTION!)
+        run: |
+          echo "--- Contents of android/app/build.gradle after Node.js script ---"
+          cat android/app/build.gradle
+          echo "------------------------------------------------------------------"
+
+      # The actual build step is OMITTED for this debug workflow.
+      # You would re-add this to your main build workflow after successful debugging.
+      # - name: Build Android Release APK
+      #   run: |
+      #     cd android
+      #     ./gradlew clean assembleRelease
+
+      # - name: Upload Release APK (OMITTED for this debug workflow)
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: app-release
+      #     path: android/app/build/outputs/apk/release/app-release.apk
