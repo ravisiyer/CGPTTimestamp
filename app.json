@@ -16,7 +16,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ravisiyer.timestamptracker",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,13 +28,18 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.ravisiyer.timestamptracker",
-      "versionCode": 4
+      "versionCode": 6
     },
     "web": {
       "favicon": "./assets/time-stamp-icon-wb.png"
     },
     "plugins": [
       "expo-localization"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "515da835-7665-4737-9131-6ac524cf3722"
+      }
+    }
   }
 }
