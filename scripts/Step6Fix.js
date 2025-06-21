@@ -4,23 +4,41 @@ const path = require('path');
 const buildGradlePath = path.join(__dirname, '..', 'android', 'app', 'build.gradle');
 
 const signingConfigContent = `
-	signingConfigs {
-		release {
-			storeFile file(MYAPP_UPLOAD_STORE_FILE)
-			storePassword MYAPP_UPLOAD_STORE_PASSWORD
-			keyAlias MYAPP_UPLOAD_KEY_ALIAS
-			keyPassword MYAPP_UPLOAD_KEY_PASSWORD
-		}
-	}
-	buildTypes {
-		release {
-			signingConfig signingConfigs.release
-			minifyEnabled false
-			shrinkResources false
-			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-		}
-	}
+    signingConfigs {
+        release {
+            storeFile file(findProperty('MYAPP_UPLOAD_STORE_FILE'))
+            storePassword findProperty('MYAPP_UPLOAD_STORE_PASSWORD')
+            keyAlias findProperty('MYAPP_UPLOAD_KEY_ALIAS')
+            keyPassword findProperty('MYAPP_UPLOAD_KEY_PASSWORD')
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
 `;
+// const signingConfigContent = `
+// 	signingConfigs {
+// 		release {
+// 			storeFile file(MYAPP_UPLOAD_STORE_FILE)
+// 			storePassword MYAPP_UPLOAD_STORE_PASSWORD
+// 			keyAlias MYAPP_UPLOAD_KEY_ALIAS
+// 			keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+// 		}
+// 	}
+// 	buildTypes {
+// 		release {
+// 			signingConfig signingConfigs.release
+// 			minifyEnabled false
+// 			shrinkResources false
+// 			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+// 		}
+// 	}
+// `;
 
 try {
     let content = fs.readFileSync(buildGradlePath, 'utf8');
