@@ -1,0 +1,83 @@
+name: Android Release Build
+
+on:
+  push:
+    branches:
+      - main # Or your default branch, e.g., 'master'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # GitHub-hosted runner with Ubuntu (Linux environment)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Use a Node.js version compatible with your Expo project
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin' # Recommended for Android builds
+          java-version: '17' # Recommended Java version for Android development
+
+      - name: Restore Node modules cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm # Adjust if you use Yarn and its cache directory (~/.cache/yarn)
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Setup Expo CLI
+        # Install expo-cli globally, or ensure it's available via npx or local package.json scripts
+        run: npm install -g expo-cli
+
+      - name: Create Keystore file
+        # This step decodes the base64-encoded keystore from GitHub Secrets
+        # and saves it as 'my-release-key.keystore' in android/app/
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MYAPP_UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p android/app # Ensure the directory exists
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/my-release-key.keystore
+
+      - name: Create gradle.properties
+        # This step creates/updates android/gradle.properties with your secrets.
+        # Gradle will read these values during the build process.
+        run: |
+          mkdir -p android # Ensure the directory exists
+          echo "MYAPP_UPLOAD_STORE_FILE=my-release-key.keystore" > android/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}" >> android/gradle.properties
+          echo "MYAPP_UPLOAD_KEY_PASSWORD=${{ secrets.MYAPP_UPLOAD_KEY_PASSWORD }}" >> android/gradle.properties
+          # You might also want to add other project-specific properties from your local gradle.properties here
+
+      - name: Generate Android project files (expo prebuild)
+        # This command creates or updates the native 'android' directory, including build.gradle.
+        run: npx expo prebuild --clean --platform android --non-interactive
+
+      - name: Run Node.js script to modify build.gradle
+        # This executes your Node.js script to insert the signing configurations.
+        # The script's `buildGradlePath` uses `path.join(__dirname, '..', 'android', 'app', 'build.gradle')`,
+        # which means it expects to be run from a subdirectory like 'scripts/'.
+        run: node scripts/Step6Fix.js # Assuming your script is saved as 'scripts/Step6Fix.js'
+
+      - name: Build Android Release APK
+        # This runs the Gradle build command to compile your release APK.
+        run: |
+          cd android
+          ./gradlew clean assembleRelease
+
+      - name: Upload Release APK
+        # This uploads the generated APK as a workflow artifact, making it downloadable.
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: android/app/build/outputs/apk/release/app-release.apk
