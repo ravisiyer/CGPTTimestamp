@@ -37,7 +37,19 @@ jobs:
 
       # --- START OF CORRECTED ORDER & PATHS ---
 
-      # Step 1: Create gradle.properties (APPEND to android/gradle.properties, not overwrite)
+      # Step 2: Run expo prebuild (This cleans and generates native files)
+      - name: Generate Android project files (expo prebuild)
+        run: npx expo prebuild --clean --platform android --non-interactive
+
+      - name: Debug - Verify android/app after prebuild
+        run: |
+          echo "--- Listing contents of android/app/ after prebuild ---"
+          ls -l android/app/
+          echo "--- First few lines of android/app/build.gradle after prebuild ---"
+          head -n 20 android/app/build.gradle
+          echo "------------------------------------------------------------------"
+
+      # Step 1: APPEND to android/gradle.properties, not overwrite
       # This file is at the project level and usually not touched by prebuild in the same way.
       - name: Create gradle.properties
         run: |
@@ -54,18 +66,6 @@ jobs:
           echo "--- Contents of android/gradle.properties ---" # IMPORTANT: Now checking android/gradle.properties
           cat android/gradle.properties
           echo "-------------------------------------------------"
-
-      # Step 2: Run expo prebuild (This cleans and generates native files)
-      - name: Generate Android project files (expo prebuild)
-        run: npx expo prebuild --clean --platform android --non-interactive
-
-      - name: Debug - Verify android/app after prebuild
-        run: |
-          echo "--- Listing contents of android/app/ after prebuild ---"
-          ls -l android/app/
-          echo "--- First few lines of android/app/build.gradle after prebuild ---"
-          head -n 20 android/app/build.gradle
-          echo "------------------------------------------------------------------"
 
       # Step 3: Create Keystore file (NOW runs AFTER prebuild, into android/app/)
       - name: Create Keystore file
