@@ -102,6 +102,14 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+
+        release {
+            storeFile file(findProperty('MYAPP_UPLOAD_STORE_FILE'))
+            storePassword findProperty('MYAPP_UPLOAD_STORE_PASSWORD')
+            keyAlias findProperty('MYAPP_UPLOAD_KEY_ALIAS')
+            keyPassword findProperty('MYAPP_UPLOAD_KEY_PASSWORD')
+        }
+
     }
     buildTypes {
         debug {
@@ -110,7 +118,7 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
@@ -125,24 +133,6 @@ android {
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
-
-	signingConfigs {
-		release {
-			storeFile file(MYAPP_UPLOAD_STORE_FILE)
-			storePassword MYAPP_UPLOAD_STORE_PASSWORD
-			keyAlias MYAPP_UPLOAD_KEY_ALIAS
-			keyPassword MYAPP_UPLOAD_KEY_PASSWORD
-		}
-	}
-	buildTypes {
-		release {
-			signingConfig signingConfigs.release
-			minifyEnabled false
-			shrinkResources false
-			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-		}
-	}
-
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`
