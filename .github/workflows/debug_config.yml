@@ -32,12 +32,10 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm install
 
-      - name: Setup Expo CLI
-        run: npm install -g expo-cli
+      # - name: Setup Expo CLI
+      #   run: npm install -g expo-cli
 
-      # --- START OF CORRECTED ORDER & PATHS ---
-
-      # Step 2: Run expo prebuild (This cleans and generates native files)
+      # Step 1: Run expo prebuild (This cleans and generates native files)
       - name: Generate Android project files (expo prebuild)
         run: npx expo prebuild --clean --platform android --non-interactive
 
@@ -49,9 +47,12 @@ jobs:
           head -n 20 android/app/build.gradle
           echo "------------------------------------------------------------------"
 
-      # Step 1: APPEND to android/gradle.properties, not overwrite
-      # This file is at the project level and usually not touched by prebuild in the same way.
-      - name: Create gradle.properties
+      # New Step: Run expo-doctor to check project health
+      - name: Run Expo Doctor
+        run: npx expo-doctor
+        
+      # Step 2: APPEND to android/gradle.properties, not overwrite
+      - name: Append to gradle.properties
         run: |
           mkdir -p android # Ensure the directory exists
           echo "" >> android/gradle.properties # Add an empty line for separation
@@ -83,8 +84,6 @@ jobs:
           echo "--- Checking size of my-release-key.keystore ---"
           du -h android/app/my-release-key.keystore
 
-      # --- END OF CORRECTED ORDER & PATHS ---
-
       # Step 5: Run Node.js script to modify build.gradle (Path in script should be android/app/build.gradle)
       - name: Run Node.js script to modify build.gradle
         run: node scripts/Step6Fix.js
@@ -96,19 +95,19 @@ jobs:
           cat android/app/build.gradle
           echo "------------------------------------------------------------------"
 
-      - name: Build Release APK
-        run: |
-          echo "Starting Android Release APK build (with clean)..."
-          cd android # Change directory to the android project root
-          ./gradlew clean assembleRelease # Command to clean and then build the release APK
-          echo "Android Release APK build finished."
-          echo "Listing generated APKs:"
-          ls -l app/build/outputs/apk/release/ # List the output directory to find the APK
-          echo "-----------------------------------"
+      # - name: Build Release APK
+      #   run: |
+      #     echo "Starting Android Release APK build (with clean)..."
+      #     cd android # Change directory to the android project root
+      #     ./gradlew clean assembleRelease # Command to clean and then build the release APK
+      #     echo "Android Release APK build finished."
+      #     echo "Listing generated APKs:"
+      #     ls -l app/build/outputs/apk/release/ # List the output directory to find the APK
+      #     echo "-----------------------------------"
 
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: myapp-release-apk # The name of the artifact, you'll see this in the workflow run summary
-          path: android/app/build/outputs/apk/release/*.apk # The path to your generated APK file(s)
-          retention-days: 5 # Optional: how long to keep the artifact (e.g., 5 days)
+      # - name: Upload Release APK
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: myapp-release-apk # The name of the artifact, you'll see this in the workflow run summary
+      #     path: android/app/build/outputs/apk/release/*.apk # The path to your generated APK file(s)
+      #     retention-days: 5 # Optional: how long to keep the artifact (e.g., 5 days)
