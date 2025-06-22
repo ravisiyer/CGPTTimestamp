@@ -41,6 +41,8 @@ jobs:
         # Gradle will read these values during the build process.
         run: |
           mkdir -p android # Ensure the directory exists
+          echo "" >> android/gradle.properties # Add an empty line for separation
+          echo "# Signing properties added by GitHub Actions" >> android/gradle.properties
           echo "MYAPP_UPLOAD_STORE_FILE=my-release-key.keystore" >> android/gradle.properties
           echo "MYAPP_UPLOAD_KEY_ALIAS=${{ secrets.MYAPP_UPLOAD_KEY_ALIAS }}" >> android/gradle.properties
           echo "MYAPP_UPLOAD_STORE_PASSWORD=${{ secrets.MYAPP_UPLOAD_STORE_PASSWORD }}" >> android/gradle.properties
