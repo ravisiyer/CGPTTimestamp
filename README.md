@@ -1,6 +1,6 @@
 Timestamp Tracker App: Auto Timestamps on Open (Android & Web)
 =====================================
-This app is an easy to use, one-touch timestamp recorder and tracker. When you open or launch the app, a timestamp is automatically created. You can add further timestamps with a single touch/click, and you can easily add notes to any entry.
+This app is an easy to use, one-tap/one-click add, timestamp recorder and tracker. When you open or launch the app, a timestamp is automatically created. You can add further timestamps with a single tap or click, and you can easily add notes to any entry.
 
 As it has been developed using React Native and Expo, there is an Android app version and a web version. As I do not have access to a MacOS computer nor an iOS phone/tablet, I did not create an iOS app.
 
