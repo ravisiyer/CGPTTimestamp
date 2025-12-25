@@ -15,6 +15,6 @@ It has the following features:
 
 App author: Ravi S. Iyer with assistance from ChatGPT and Gemini
 
-App date: 18 Jun. 2025 (this may change as the app is updated)
+App date: 25 Dec. 2025 (this may change as the app is updated)
 
 For more and current info including Android APK download link, web app site and screenshots, please visit associated blog post: [Timestamp Tracker App: Auto Timestamps on Open (Android & Web), built with React Native and Expo using ChatGPT and Gemini assistance](https://raviswdev.blogspot.com/2025/06/using-chatgpt-to-write-react-native.html).

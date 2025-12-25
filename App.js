@@ -158,15 +158,15 @@ export default function App() {
                 let alertMessage = null;
                 let alertTitle = null;
 
-                // Scenario 1: List is already full on launch (or more than MAX_TIMESTAMPS from old data, truncate silently)
+                // Scenario 1: List is already full on open/launch (or more than MAX_TIMESTAMPS from old data, truncate silently)
                 if (loadedParsedTimestamps.length >= MAX_TIMESTAMPS) {
                     finalTimestampsToSet = loadedParsedTimestamps.slice(0, MAX_TIMESTAMPS); // Truncate if somehow more were stored
-                    alertTitle = "Timestamp Data Full on Launch";
-                    alertMessage = `Timestamp data was full (${MAX_TIMESTAMPS} entries) when the app launched. ` +
+                    alertTitle = "Timestamp Data Full on Open";
+                    alertMessage = `Timestamp data was full (${MAX_TIMESTAMPS} entries) when the app was opened. ` +
                                    "No new timestamp was added automatically. Please delete some entries or clear all " +
                                    "timestamps if you wish to add more." ;
                     if (__DEV__) {
-                        console.log("Timestamp list already full on app launch, no initial timestamp added.");
+                        console.log("Timestamp list already full on app open, no initial timestamp added.");
                     }
                 }
                 // Scenario 2: List not full, will add initial timestamp
@@ -176,7 +176,7 @@ export default function App() {
                     finalTimestampsToSet = [initialTimestampEntry, ...loadedParsedTimestamps]; // Add, don't slice yet for this case
 
                     if (__DEV__) {
-                        console.log("Initial timestamp added on app launch.");
+                        console.log("Initial timestamp added on app open.");
                     }
                     setHighlightedTimestampId(initialTimestampEntry.id);
 
@@ -184,7 +184,7 @@ export default function App() {
                     // Check if adding this timestamp caused the list to become full
                     if (finalTimestampsToSet.length === MAX_TIMESTAMPS) {
                         alertTitle = "Timestamp List Now Full";
-                        alertMessage = `The timestamp list is now full with ${MAX_TIMESTAMPS} entries due to the initial timestamp added on launch. ` +
+                        alertMessage = `The timestamp list is now full with ${MAX_TIMESTAMPS} entries due to the initial timestamp added on app open. ` +
                                        "**Further additions will not be made**. Please delete some entries or clear all timestamps if you wish to add more." ; // Updated wording
                     }
                 }
@@ -439,7 +439,7 @@ export default function App() {
                         {interval && <Text style={styles.text}>Interval: {interval}</Text>}
                         {item.note ? (
                             <Text style={styles.noteText} numberOfLines={1} ellipsizeMode="tail">
-                                Note: {item.note}
+                                {item.note}
                             </Text>
                         ) : null}
                     </View>
@@ -577,8 +577,8 @@ export default function App() {
                         <ScrollView contentContainerStyle={styles.infoModalContent}>
                             <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#000' }]}>About This App</Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                                This is a launch and one-touch-add timestamp recorder app with facility to add a note
-                                to any timestamp entry. It automatically creates a timestamp when the app is launched.
+                                This is an open app timestamp and one-tap-add timestamp recorder app with facility to add
+                                a note to any timestamp entry. It automatically creates a timestamp when the app is opened.
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ fontWeight: 'bold' }}>Add (Timestamp) buttons:</Text> Adds timestamp
@@ -606,7 +606,7 @@ export default function App() {
                                 <Text style={{ fontWeight: 'bold' }}>App author:</Text> Ravi S. Iyer with assistance from ChatGPT and Gemini
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
-                                <Text style={{ fontWeight: 'bold' }}>App date:</Text> 20 Jun. 2025
+                                <Text style={{ fontWeight: 'bold' }}>App date:</Text> 25 Dec. 2025
                             </Text>
                             <Text style={[styles.modalText, { color: isDark ? '#ddd' : '#333' }]}>
                                 <Text style={{ color: isDark ? '#87CEEB' : 'blue', textDecorationLine: 'underline' }} onPress={openBlogLink}>
