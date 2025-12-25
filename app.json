@@ -27,8 +27,7 @@
         "foregroundImage": "./assets/time-stamp-icon-wb.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.ravisiyer.devtimestamptracker",
-      "versionCode": 7
+      "package": "com.ravisiyer.devtimestamptracker"
     },
     "web": {
       "favicon": "./assets/time-stamp-icon-wb.png"
