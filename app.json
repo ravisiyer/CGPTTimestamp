@@ -1,34 +1,34 @@
 {
   "expo": {
-    "name": "Timestamp Tracker",
-    "slug": "timestamp-tracker",
-    "version": "1.2.1",
+    "name": "Dev Timestamp Tracker",
+    "slug": "dev-timestamp-tracker",
+    "version": "1.3.1",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/time-stamp-icon-wb.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "experiments": {
       "baseUrl": "/CGPTTimestamp"
     },
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/time-stamp-icon-wb.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ravisiyer.timestamptracker",
+      "bundleIdentifier": "com.ravisiyer.devtimestamptracker",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/time-stamp-icon-wb.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.ravisiyer.timestamptracker",
-      "versionCode": 6
+      "package": "com.ravisiyer.devtimestamptracker",
+      "versionCode": 7
     },
     "web": {
       "favicon": "./assets/time-stamp-icon-wb.png"
