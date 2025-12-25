@@ -38,8 +38,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "515da835-7665-4737-9131-6ac524cf3722"
+        "projectId": "b10c5153-3cb6-440b-8610-bbffce683b94"
       }
-    }
+    },
+    "owner": "ravisiyer"
   }
 }
